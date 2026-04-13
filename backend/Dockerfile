@@ -14,4 +14,4 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./
 EXPOSE 3000
-CMD ["sh", "-c", "until npx prisma migrate deploy; do echo 'Aguardando banco de dados...'; sleep 3; done && node dist/seed.js; node dist/index.js"]
+CMD ["sh", "-c", "until npx prisma db push --accept-data-loss; do echo 'Aguardando banco de dados...'; sleep 3; done && node dist/seed.js; node dist/index.js"]
