@@ -112,8 +112,8 @@ export function ClientsPage() {
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Telefone</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Empresa</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Responsavel</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Acoes</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Responsável</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -223,7 +223,7 @@ export function ClientsPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Excluir Cliente"
-        message={`Tem certeza que deseja excluir o cliente "${deleteTarget?.name}"? Esta acao nao pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir o cliente "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
         loading={loading}
       />
     </div>

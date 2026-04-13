@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import { comparePassword } from '../../utils/password';
+import { comparePassword, hashPassword } from '../../utils/password';
 import { generateAccessToken } from '../../utils/jwt';
+import { UpdateProfileInput } from './auth.schema';
 import { env } from '../../config/env';
 
 const prisma = new PrismaClient();
@@ -71,6 +72,36 @@ export async function refresh(refreshTokenValue: string) {
 
 export async function logout(refreshTokenValue: string) {
   await prisma.refreshToken.deleteMany({ where: { token: refreshTokenValue } });
+}
+
+export async function updateProfile(userId: string, data: UpdateProfileInput) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw { status: 404, message: 'Usuário não encontrado' };
+
+  const updateData: any = {};
+
+  if (data.name) updateData.name = data.name;
+
+  if (data.email && data.email !== user.email) {
+    const existing = await prisma.user.findUnique({ where: { email: data.email } });
+    if (existing) throw { status: 409, message: 'Email já cadastrado' };
+    updateData.email = data.email;
+  }
+
+  if (data.newPassword) {
+    if (!data.currentPassword) throw { status: 400, message: 'Senha atual é obrigatória' };
+    const valid = await comparePassword(data.currentPassword, user.passwordHash);
+    if (!valid) throw { status: 400, message: 'Senha atual incorreta' };
+    updateData.passwordHash = await hashPassword(data.newPassword);
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+    select: { id: true, name: true, email: true, role: true },
+  });
+
+  return updated;
 }
 
 export async function getMe(userId: string) {

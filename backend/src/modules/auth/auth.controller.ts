@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { loginSchema, refreshSchema } from './auth.schema';
+import { loginSchema, refreshSchema, updateProfileSchema } from './auth.schema';
 import * as authService from './auth.service';
 
 export async function login(req: Request, res: Response, next: NextFunction) {
@@ -35,6 +35,16 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 export async function me(req: Request, res: Response, next: NextFunction) {
   try {
     const user = await authService.getMe(req.user!.userId);
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateProfile(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = updateProfileSchema.parse(req.body);
+    const user = await authService.updateProfile(req.user!.userId, data);
     res.json(user);
   } catch (err) {
     next(err);

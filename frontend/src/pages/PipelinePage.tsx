@@ -22,7 +22,7 @@ interface ClientOption {
 const stages = [
   { key: 'LEAD', label: 'Lead', color: 'bg-gray-100 border-gray-300' },
   { key: 'PROPOSTA', label: 'Proposta', color: 'bg-blue-50 border-blue-300' },
-  { key: 'NEGOCIACAO', label: 'Negociacao', color: 'bg-yellow-50 border-yellow-300' },
+  { key: 'NEGOCIACAO', label: 'Negociação', color: 'bg-yellow-50 border-yellow-300' },
   { key: 'FECHADO_GANHO', label: 'Ganho', color: 'bg-green-50 border-green-300' },
   { key: 'FECHADO_PERDIDO', label: 'Perdido', color: 'bg-red-50 border-red-300' },
 ];
@@ -103,7 +103,7 @@ export function PipelinePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Pipeline de Vendas</h1>
         <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-          + Novo Negocio
+          + Novo Negócio
         </button>
       </div>
 
@@ -153,10 +153,10 @@ export function PipelinePage() {
         </div>
       </DragDropContext>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Novo Negocio">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Novo Negócio">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Titulo *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
             <input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}

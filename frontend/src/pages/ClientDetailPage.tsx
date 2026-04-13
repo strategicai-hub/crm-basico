@@ -24,10 +24,10 @@ interface Activity {
 
 const typeLabels: Record<string, string> = {
   NOTE: 'Nota',
-  CALL: 'Ligacao',
+  CALL: 'Ligação',
   EMAIL: 'Email',
-  MEETING: 'Reuniao',
-  STAGE_CHANGE: 'Mudanca de Etapa',
+  MEETING: 'Reunião',
+  STAGE_CHANGE: 'Mudança de Etapa',
 };
 
 export function ClientDetailPage() {
@@ -73,7 +73,7 @@ export function ClientDetailPage() {
           <div className="flex gap-4 text-center">
             <div className="bg-blue-50 rounded-lg px-4 py-2">
               <p className="text-xl font-bold text-blue-600">{client._count.deals}</p>
-              <p className="text-xs text-gray-500">Negocios</p>
+              <p className="text-xs text-gray-500">Negócios</p>
             </div>
             <div className="bg-green-50 rounded-lg px-4 py-2">
               <p className="text-xl font-bold text-green-600">{client._count.tasks}</p>
@@ -92,7 +92,7 @@ export function ClientDetailPage() {
             <p className="text-sm">{client.phone || '-'}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Responsavel</p>
+            <p className="text-xs text-gray-500">Responsável</p>
             <p className="text-sm">{client.owner.name}</p>
           </div>
           <div>
@@ -118,9 +118,9 @@ export function ClientDetailPage() {
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
           >
             <option value="NOTE">Nota</option>
-            <option value="CALL">Ligacao</option>
+            <option value="CALL">Ligação</option>
             <option value="EMAIL">Email</option>
-            <option value="MEETING">Reuniao</option>
+            <option value="MEETING">Reunião</option>
           </select>
           <input
             value={activityForm.content}
@@ -141,7 +141,7 @@ export function ClientDetailPage() {
 
       {/* Activities Timeline */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold mb-4">Historico</h2>
+        <h2 className="text-lg font-semibold mb-4">Histórico</h2>
         {activities.length === 0 ? (
           <p className="text-gray-500 text-sm">Nenhuma atividade registrada.</p>
         ) : (

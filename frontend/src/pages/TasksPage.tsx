@@ -17,7 +17,7 @@ interface Task {
 const statusLabels: Record<string, { label: string; color: string }> = {
   PENDENTE: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
   EM_ANDAMENTO: { label: 'Em Andamento', color: 'bg-blue-100 text-blue-800' },
-  CONCLUIDA: { label: 'Concluida', color: 'bg-green-100 text-green-800' },
+  CONCLUIDA: { label: 'Concluída', color: 'bg-green-100 text-green-800' },
   CANCELADA: { label: 'Cancelada', color: 'bg-gray-100 text-gray-800' },
 };
 
@@ -176,7 +176,7 @@ export function TasksPage() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editTask ? 'Editar Tarefa' : 'Nova Tarefa'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Titulo *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
             <input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -185,7 +185,7 @@ export function TasksPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descricao</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}

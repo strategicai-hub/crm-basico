@@ -52,9 +52,9 @@ export function UsersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Usuarios</h1>
+        <h1 className="text-2xl font-bold">Usuários</h1>
         <button onClick={() => setModalOpen(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-          + Novo Usuario
+          + Novo Usuário
         </button>
       </div>
 
@@ -67,7 +67,7 @@ export function UsersPage() {
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Perfil</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Criado em</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Acoes</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -77,7 +77,7 @@ export function UsersPage() {
                 <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {user.role === 'ADMIN' ? 'Admin' : 'Usuario'}
+                    {user.role === 'ADMIN' ? 'Admin' : 'Usuário'}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -88,7 +88,7 @@ export function UsersPage() {
                 <td className="px-4 py-3 text-sm text-gray-600">{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
                 <td className="px-4 py-3 text-sm text-right space-x-2">
                   <button onClick={() => toggleRole(user)} className="text-gray-500 hover:text-purple-600">
-                    {user.role === 'ADMIN' ? 'Tornar Usuario' : 'Tornar Admin'}
+                    {user.role === 'ADMIN' ? 'Tornar Usuário' : 'Tornar Admin'}
                   </button>
                   <button onClick={() => toggleActive(user)} className={`${user.active ? 'text-gray-500 hover:text-red-600' : 'text-gray-500 hover:text-green-600'}`}>
                     {user.active ? 'Desativar' : 'Ativar'}
@@ -100,7 +100,7 @@ export function UsersPage() {
         </table>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Novo Usuario">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Novo Usuário">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
@@ -139,7 +139,7 @@ export function UsersPage() {
               onChange={(e) => setForm({ ...form, role: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="USER">Usuario</option>
+              <option value="USER">Usuário</option>
               <option value="ADMIN">Admin</option>
             </select>
           </div>

@@ -32,7 +32,7 @@ interface Activity {
 const stageLabels: Record<string, string> = {
   LEAD: 'Lead',
   PROPOSTA: 'Proposta',
-  NEGOCIACAO: 'Negociacao',
+  NEGOCIACAO: 'Negociação',
   FECHADO_GANHO: 'Ganho',
   FECHADO_PERDIDO: 'Perdido',
 };
@@ -61,7 +61,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Clientes', value: summary?.totalClients ?? '-', color: 'blue' },
-          { label: 'Negocios Abertos', value: summary?.openDeals ?? '-', color: 'green' },
+          { label: 'Negócios Abertos', value: summary?.openDeals ?? '-', color: 'green' },
           { label: 'Valor no Pipeline', value: summary ? formatCurrency(summary.pipelineValue) : '-', color: 'purple' },
           { label: 'Tarefas Pendentes', value: summary?.pendingTasks ?? '-', color: 'orange' },
         ].map((card) => (
@@ -75,7 +75,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sales Chart */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold mb-4">Vendas por Mes</h2>
+          <h2 className="text-lg font-semibold mb-4">Vendas por Mês</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={sales}>
@@ -91,7 +91,7 @@ export function DashboardPage() {
 
         {/* Funnel */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold mb-4">Funil de Conversao</h2>
+          <h2 className="text-lg font-semibold mb-4">Funil de Conversão</h2>
           <div className="space-y-3">
             {funnel.map((item) => {
               const maxCount = Math.max(...funnel.map((f) => f.count), 1);
@@ -136,7 +136,7 @@ export function DashboardPage() {
                   </p>
                   <div className="flex gap-2 text-xs text-gray-400 mt-1">
                     {activity.client && <span>Cliente: {activity.client.name}</span>}
-                    {activity.deal && <span>Negocio: {activity.deal.title}</span>}
+                    {activity.deal && <span>Negócio: {activity.deal.title}</span>}
                     <span>{new Date(activity.createdAt).toLocaleString('pt-BR')}</span>
                   </div>
                 </div>

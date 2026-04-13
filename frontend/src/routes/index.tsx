@@ -8,6 +8,7 @@ import { ClientDetailPage } from '../pages/ClientDetailPage';
 import { PipelinePage } from '../pages/PipelinePage';
 import { TasksPage } from '../pages/TasksPage';
 import { UsersPage } from '../pages/UsersPage';
+import { SettingsPage } from '../pages/SettingsPage';
 
 export const router = createBrowserRouter([
   {
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: '/clientes/:id', element: <ClientDetailPage /> },
       { path: '/pipeline', element: <PipelinePage /> },
       { path: '/tarefas', element: <TasksPage /> },
+      { path: '/configuracoes', element: <SettingsPage /> },
       {
         path: '/usuarios',
         element: (
