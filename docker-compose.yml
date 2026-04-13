@@ -17,9 +17,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/gustavocastilho-hub/crm-basico-backend:latest
     restart: unless-stopped
     depends_on:
       - postgres
@@ -31,9 +29,7 @@ services:
       NODE_ENV: production
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/gustavocastilho-hub/crm-basico-frontend:latest
     restart: unless-stopped
     depends_on:
       - backend
