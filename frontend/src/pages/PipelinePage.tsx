@@ -30,12 +30,29 @@ interface StageConfig {
   [key: string]: { label: string; color: string };
 }
 
-const stages = [
+interface Stage {
+  key: string;
+  label: string;
+  color: string;
+}
+
+const defaultStages: Stage[] = [
   { key: 'LEAD', label: 'Lead', color: 'bg-gray-100 border-gray-300' },
   { key: 'PROPOSTA', label: 'Proposta', color: 'bg-blue-50 border-blue-300' },
   { key: 'NEGOCIACAO', label: 'Negociação', color: 'bg-yellow-50 border-yellow-300' },
   { key: 'FECHADO_GANHO', label: 'Ganho', color: 'bg-green-50 border-green-300' },
   { key: 'FECHADO_PERDIDO', label: 'Perdido', color: 'bg-red-50 border-red-300' },
+];
+
+const colorOptions = [
+  { label: 'Cinza', value: 'bg-gray-100 border-gray-300' },
+  { label: 'Azul', value: 'bg-blue-50 border-blue-300' },
+  { label: 'Amarelo', value: 'bg-yellow-50 border-yellow-300' },
+  { label: 'Verde', value: 'bg-green-50 border-green-300' },
+  { label: 'Vermelho', value: 'bg-red-50 border-red-300' },
+  { label: 'Roxo', value: 'bg-purple-50 border-purple-300' },
+  { label: 'Laranja', value: 'bg-orange-50 border-orange-300' },
+  { label: 'Índigo', value: 'bg-indigo-50 border-indigo-300' },
 ];
 
 export function PipelinePage() {
@@ -52,6 +69,10 @@ export function PipelinePage() {
   const [editForm, setEditForm] = useState({ title: '', value: '', stage: 'LEAD', ownerId: '' });
   const [configEditing, setConfigEditing] = useState<Record<string, { label: string; color: string }>>({});
   const [stageConfig, setStageConfig] = useState<StageConfig>({});
+  const [stages, setStages] = useState<Stage[]>(defaultStages);
+  const [stagesEditing, setStagesEditing] = useState<Stage[]>([]);
+  const [newStageLabel, setNewStageLabel] = useState('');
+  const [newStageColor, setNewStageColor] = useState('bg-gray-100 border-gray-300');
   const [loading, setLoading] = useState(false);
 
   const fetchDeals = async () => {
@@ -60,9 +81,25 @@ export function PipelinePage() {
   };
 
   useEffect(() => {
+    loadStages();
     fetchDeals();
     loadStageConfig();
   }, []);
+
+  const loadStages = () => {
+    const saved = localStorage.getItem('crm_stages');
+    if (saved) {
+      try {
+        const loaded = JSON.parse(saved);
+        setStages(loaded);
+      } catch {}
+    }
+  };
+
+  const saveStages = (newStages: Stage[]) => {
+    localStorage.setItem('crm_stages', JSON.stringify(newStages));
+    setStages(newStages);
+  };
 
   const loadStageConfig = () => {
     const saved = localStorage.getItem('crm_stage_config');
@@ -82,7 +119,7 @@ export function PipelinePage() {
   const openCreate = async () => {
     const { data } = await clientsApi.list({ limit: 100 });
     setClients(data.data.map((c: any) => ({ id: c.id, name: c.name })));
-    setForm({ title: '', value: '', clientId: '', stage: 'LEAD' });
+    setForm({ title: '', value: '', clientId: '', stage: stages[0]?.key || 'LEAD' });
     setModalOpen(true);
   };
 
@@ -183,6 +220,28 @@ export function PipelinePage() {
     return stages.find(s => s.key === stageKey)?.color || 'bg-gray-100 border-gray-300';
   };
 
+  const addStage = () => {
+    if (!newStageLabel.trim()) return;
+    const newStage: Stage = {
+      key: `CUSTOM_${Date.now()}`,
+      label: newStageLabel.trim(),
+      color: newStageColor,
+    };
+    const updated = [...stagesEditing, newStage];
+    setStagesEditing(updated);
+    setNewStageLabel('');
+    setNewStageColor('bg-gray-100 border-gray-300');
+  };
+
+  const removeStage = (stageKey: string) => {
+    setStagesEditing(stagesEditing.filter(s => s.key !== stageKey));
+  };
+
+  const saveStagesConfig = () => {
+    saveStages(stagesEditing);
+    setStageConfigOpen(false);
+  };
+
   const allDeals = Object.values(columns).flat();
 
   return (
@@ -217,6 +276,7 @@ export function PipelinePage() {
           {viewMode === 'kanban' && (
             <button
               onClick={() => {
+                setStagesEditing(stages);
                 setConfigEditing(stageConfig);
                 setStageConfigOpen(true);
               }}
@@ -480,50 +540,83 @@ export function PipelinePage() {
       </Modal>
 
       <Modal open={stageConfigOpen} onClose={() => setStageConfigOpen(false)} title="Configurar Etapas">
-        <div className="space-y-4">
-          {stages.map((stage) => (
+        <div className="space-y-4 max-h-96 overflow-y-auto">
+          {stagesEditing.map((stage) => (
             <div key={stage.key} className="border border-gray-200 rounded-lg p-3">
               <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome da etapa</label>
-                  <input
-                    type="text"
-                    value={configEditing[stage.key]?.label || stage.label}
-                    onChange={(e) =>
-                      setConfigEditing({
-                        ...configEditing,
-                        [stage.key]: { ...configEditing[stage.key], label: e.target.value, color: configEditing[stage.key]?.color || stage.color },
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome da etapa</label>
+                    <input
+                      type="text"
+                      value={stage.label}
+                      onChange={(e) =>
+                        setStagesEditing(stagesEditing.map(s => s.key === stage.key ? { ...s, label: e.target.value } : s))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cor</label>
-                  <select
-                    value={configEditing[stage.key]?.color || stage.color}
-                    onChange={(e) =>
-                      setConfigEditing({
-                        ...configEditing,
-                        [stage.key]: { ...configEditing[stage.key], color: e.target.value, label: configEditing[stage.key]?.label || stage.label },
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    <option value="bg-gray-100 border-gray-300">Cinza</option>
-                    <option value="bg-blue-50 border-blue-300">Azul</option>
-                    <option value="bg-yellow-50 border-yellow-300">Amarelo</option>
-                    <option value="bg-green-50 border-green-300">Verde</option>
-                    <option value="bg-red-50 border-red-300">Vermelho</option>
-                    <option value="bg-purple-50 border-purple-300">Roxo</option>
-                    <option value="bg-orange-50 border-orange-300">Laranja</option>
-                    <option value="bg-indigo-50 border-indigo-300">Índigo</option>
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cor</label>
+                    <select
+                      value={stage.color}
+                      onChange={(e) =>
+                        setStagesEditing(stagesEditing.map(s => s.key === stage.key ? { ...s, color: e.target.value } : s))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      {colorOptions.map(color => (
+                        <option key={color.value} value={color.value}>{color.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {stage.key.startsWith('CUSTOM_') && (
+                    <button
+                      type="button"
+                      onClick={() => removeStage(stage.key)}
+                      className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded hover:bg-red-100"
+                    >
+                      🗑️ Remover
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           ))}
-          <div className="flex justify-end gap-3">
+
+          <div className="border border-dashed border-gray-300 rounded-lg p-3 bg-gray-50">
+            <h4 className="font-medium text-sm mb-3">Adicionar nova etapa</h4>
+            <div className="space-y-3">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Nome da etapa"
+                  value={newStageLabel}
+                  onChange={(e) => setNewStageLabel(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div>
+                <select
+                  value={newStageColor}
+                  onChange={(e) => setNewStageColor(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  {colorOptions.map(color => (
+                    <option key={color.value} value={color.value}>{color.label}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={addStage}
+                className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+              >
+                + Adicionar etapa
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={() => setStageConfigOpen(false)}
@@ -533,10 +626,7 @@ export function PipelinePage() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                saveStageConfig(configEditing);
-                setStageConfigOpen(false);
-              }}
+              onClick={saveStagesConfig}
               className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
             >
               Salvar
