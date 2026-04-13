@@ -22,8 +22,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     environment:
       DATABASE_URL: postgresql://${DB_USER:-crm}:${DB_PASSWORD}@postgres:5432/crm_basico
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:?ACCESS_TOKEN_SECRET is required}
