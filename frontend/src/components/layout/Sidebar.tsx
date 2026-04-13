@@ -23,9 +23,8 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
-      <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-        <img src="/clean-crm.png" alt="CLEAN CRM" className="h-8 w-8" />
-        <h1 className="text-xl font-bold text-blue-600">CLEAN CRM</h1>
+      <div className="px-6 py-4 border-b border-gray-200">
+        <img src="/sai-crm.png" alt="SAI CRM" className="h-12 w-auto" />
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {items.map((item) => (
