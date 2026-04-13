@@ -3,7 +3,6 @@ version: "3.8"
 services:
   postgres:
     image: postgres:16-alpine
-    restart: unless-stopped
     environment:
       POSTGRES_DB: crm_basico
       POSTGRES_USER: ${DB_USER:-crm}
@@ -15,10 +14,14 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - internal
+    deploy:
+      restart_policy:
+        condition: any
 
   backend:
     image: ghcr.io/gustavocastilho-hub/crm-basico-backend:latest
-    restart: unless-stopped
     depends_on:
       - postgres
     environment:
@@ -27,14 +30,37 @@ services:
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:?REFRESH_TOKEN_SECRET is required}
       PORT: 3000
       NODE_ENV: production
+    networks:
+      - internal
+    deploy:
+      restart_policy:
+        condition: any
 
   frontend:
     image: ghcr.io/gustavocastilho-hub/crm-basico-frontend:latest
-    restart: unless-stopped
-    depends_on:
-      - backend
-    ports:
-      - "80:80"
+    networks:
+      - internal
+      - network_public
+    deploy:
+      restart_policy:
+        condition: any
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.crm-frontend-http.rule=Host(`crm-basico.strategicai.com.br`)"
+        - "traefik.http.routers.crm-frontend-http.entrypoints=web"
+        - "traefik.http.routers.crm-frontend-http.middlewares=redirect-to-https"
+        - "traefik.http.routers.crm-frontend.rule=Host(`crm-basico.strategicai.com.br`)"
+        - "traefik.http.routers.crm-frontend.entrypoints=websecure"
+        - "traefik.http.routers.crm-frontend.tls.certresolver=letsencrypt"
+        - "traefik.http.services.crm-frontend.loadbalancer.server.port=80"
+        - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+        - "traefik.docker.network=network_public"
+
+networks:
+  internal:
+    driver: overlay
+  network_public:
+    external: true
 
 volumes:
   pgdata:
