@@ -15,5 +15,10 @@ export const updateUserSchema = z.object({
   active: z.boolean().optional(),
 });
 
+export const bulkDeleteUsersSchema = z.object({
+  ids: z.array(z.string().uuid('ID de usuário inválido')).min(1, 'Informe ao menos um ID').max(200, 'Máximo de 200 IDs por requisição'),
+});
+
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type BulkDeleteUsersInput = z.infer<typeof bulkDeleteUsersSchema>;

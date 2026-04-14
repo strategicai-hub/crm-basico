@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createClientSchema, updateClientSchema, addActivitySchema } from './clients.schema';
+import { createClientSchema, updateClientSchema, addActivitySchema, bulkDeleteClientsSchema } from './clients.schema';
 import * as clientsService from './clients.service';
 import { getPagination, paginatedResponse } from '../../utils/pagination';
 
@@ -53,6 +53,16 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     await clientsService.deleteClient(req.params.id, req.ownerFilter!);
     res.json({ message: 'Cliente removido' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function bulkRemove(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { ids } = bulkDeleteClientsSchema.parse(req.body);
+    const result = await clientsService.bulkDeleteClients(ids, req.ownerFilter!);
+    res.json(result);
   } catch (err) {
     next(err);
   }

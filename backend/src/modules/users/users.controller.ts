@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createUserSchema, updateUserSchema } from './users.schema';
+import { createUserSchema, updateUserSchema, bulkDeleteUsersSchema } from './users.schema';
 import * as usersService from './users.service';
 import { getPagination, paginatedResponse } from '../../utils/pagination';
 
@@ -46,6 +46,16 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     await usersService.deleteUser(req.params.id);
     res.json({ message: 'Usuário desativado' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function bulkRemove(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { ids } = bulkDeleteUsersSchema.parse(req.body);
+    const result = await usersService.bulkDeactivateUsers(ids, req.user!.userId);
+    res.json(result);
   } catch (err) {
     next(err);
   }

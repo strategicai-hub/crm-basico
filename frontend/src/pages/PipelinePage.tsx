@@ -6,6 +6,7 @@ import { clientsApi } from '../api/clients.api';
 import { usersApi } from '../api/users.api';
 import { stagesApi } from '../api/stages.api';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useAuthStore } from '../store/authStore';
 
 type StageType = 'OPEN' | 'WON' | 'LOST';
@@ -78,6 +79,9 @@ export function PipelinePage() {
   const [newStageType, setNewStageType] = useState<StageType>('OPEN');
   const [loading, setLoading] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [selectedDealIds, setSelectedDealIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<Deal | null>(null);
 
   const fetchStages = async () => {
     const { data } = await stagesApi.list();
@@ -257,6 +261,45 @@ export function PipelinePage() {
 
   const allDeals = Object.values(columns).flat();
 
+  const toggleDealSelection = (id: string) => {
+    setSelectedDealIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedDealIds(new Set());
+
+  const handleConfirmSingleDelete = async () => {
+    if (!singleDeleteTarget) return;
+    setLoading(true);
+    try {
+      await dealsApi.remove(singleDeleteTarget.id);
+      setSelectedDealIds((prev) => {
+        const next = new Set(prev);
+        next.delete(singleDeleteTarget.id);
+        return next;
+      });
+      setSingleDeleteTarget(null);
+      fetchDeals();
+    } catch {}
+    setLoading(false);
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedDealIds.size === 0) return;
+    setLoading(true);
+    try {
+      await dealsApi.bulkRemove(Array.from(selectedDealIds));
+      clearSelection();
+      setBulkDeleteOpen(false);
+      fetchDeals();
+    } catch {}
+    setLoading(false);
+  };
+
   return (
     <div className="space-y-3 sm:space-y-4 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -301,6 +344,28 @@ export function PipelinePage() {
         </div>
       </div>
 
+      {selectedDealIds.size > 0 && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+          <span className="text-sm text-blue-800">
+            {selectedDealIds.size} negócio(s) selecionado(s)
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={clearSelection}
+              className="px-3 py-1 text-xs bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+            >
+              Limpar seleção
+            </button>
+            <button
+              onClick={() => setBulkDeleteOpen(true)}
+              className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 font-medium"
+            >
+              Excluir selecionados
+            </button>
+          </div>
+        </div>
+      )}
+
       {viewMode === 'kanban' && (
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 flex-shrink-0">
@@ -337,7 +402,16 @@ export function PipelinePage() {
                               snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-400' : ''
                             }`}
                           >
-                            <div className="flex items-start justify-between">
+                            <div className="flex items-start justify-between gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedDealIds.has(deal.id)}
+                                onChange={() => toggleDealSelection(deal.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                className="mt-1 cursor-pointer"
+                                title="Selecionar negócio"
+                              />
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{deal.title}</p>
                                 <p className="text-xs text-gray-500 mt-1">{deal.client.name}</p>
@@ -351,13 +425,26 @@ export function PipelinePage() {
                                 )}
                                 <p className="text-xs text-gray-400 mt-1">{deal.owner.name}</p>
                               </div>
-                              <button
-                                onClick={() => handleEdit(deal)}
-                                className="ml-2 p-1 text-gray-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Editar negócio"
-                              >
-                                ✏️
-                              </button>
+                              <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => handleEdit(deal)}
+                                  className="p-1 text-gray-400 hover:text-blue-600"
+                                  title="Editar negócio"
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSingleDeleteTarget(deal);
+                                  }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  className="p-1 text-gray-400 hover:text-red-600"
+                                  title="Excluir negócio"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -379,6 +466,18 @@ export function PipelinePage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               <tr>
+                <th className="px-2 sm:px-4 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allDeals.length > 0 && allDeals.every((d) => selectedDealIds.has(d.id))}
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedDealIds(new Set(allDeals.map((d) => d.id)));
+                      else clearSelection();
+                    }}
+                    title="Selecionar todos"
+                    className="cursor-pointer"
+                  />
+                </th>
                 <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-gray-700">Título</th>
                 <th className="hidden sm:table-cell px-4 py-3 text-left text-sm font-semibold text-gray-700">Empresa</th>
                 <th className="hidden md:table-cell px-4 py-3 text-left text-sm font-semibold text-gray-700">Valor</th>
@@ -390,6 +489,14 @@ export function PipelinePage() {
             <tbody>
               {allDeals.map((deal) => (
                 <tr key={deal.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="px-2 sm:px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedDealIds.has(deal.id)}
+                      onChange={() => toggleDealSelection(deal.id)}
+                      className="cursor-pointer"
+                    />
+                  </td>
                   <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-900 font-medium">{deal.title}</td>
                   <td className="hidden sm:table-cell px-4 py-3 text-sm text-gray-600">{deal.client.company || '—'}</td>
                   <td className="hidden md:table-cell px-4 py-3 text-sm font-semibold text-green-600">{deal.value ? formatCurrency(deal.value) : '—'}</td>
@@ -399,13 +506,20 @@ export function PipelinePage() {
                     </span>
                   </td>
                   <td className="hidden lg:table-cell px-4 py-3 text-sm text-gray-600">{deal.owner.name}</td>
-                  <td className="px-2 sm:px-4 py-3 text-sm">
+                  <td className="px-2 sm:px-4 py-3 text-sm space-x-2">
                     <button
                       onClick={() => handleEdit(deal)}
                       className="text-blue-600 hover:text-blue-700 font-medium"
                       title="Editar"
                     >
                       ✏️
+                    </button>
+                    <button
+                      onClick={() => setSingleDeleteTarget(deal)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Excluir"
+                    >
+                      🗑️
                     </button>
                   </td>
                 </tr>
@@ -665,6 +779,24 @@ export function PipelinePage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={!!singleDeleteTarget}
+        onClose={() => setSingleDeleteTarget(null)}
+        onConfirm={handleConfirmSingleDelete}
+        title="Excluir Negócio"
+        message={`Tem certeza que deseja excluir o negócio "${singleDeleteTarget?.title}"? Esta ação não pode ser desfeita.`}
+        loading={loading}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Excluir Negócios"
+        message={`Tem certeza que deseja excluir ${selectedDealIds.size} negócio(s)? Esta ação não pode ser desfeita.`}
+        loading={loading}
+      />
     </div>
   );
 }

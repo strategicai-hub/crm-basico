@@ -75,6 +75,13 @@ export async function deleteClient(id: string, ownerFilter: any) {
   await prisma.client.delete({ where: { id } });
 }
 
+export async function bulkDeleteClients(ids: string[], ownerFilter: any) {
+  const result = await prisma.client.deleteMany({
+    where: { id: { in: ids }, ...ownerFilter },
+  });
+  return { count: result.count };
+}
+
 export async function getClientActivities(id: string, ownerFilter: any) {
   const client = await prisma.client.findFirst({ where: { id, ...ownerFilter } });
   if (!client) throw { status: 404, message: 'Cliente não encontrado' };

@@ -20,6 +20,11 @@ export const moveDealSchema = z.object({
   position: z.number().int().min(0),
 });
 
+export const bulkDeleteDealsSchema = z.object({
+  ids: z.array(z.string().uuid('ID de negócio inválido')).min(1, 'Informe ao menos um ID').max(200, 'Máximo de 200 IDs por requisição'),
+});
+
 export type CreateDealInput = z.infer<typeof createDealSchema>;
 export type UpdateDealInput = z.infer<typeof updateDealSchema>;
 export type MoveDealInput = z.infer<typeof moveDealSchema>;
+export type BulkDeleteDealsInput = z.infer<typeof bulkDeleteDealsSchema>;

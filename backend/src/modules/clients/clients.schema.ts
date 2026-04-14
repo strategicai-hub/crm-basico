@@ -15,6 +15,11 @@ export const addActivitySchema = z.object({
   content: z.string().min(1, 'Conteúdo é obrigatório'),
 });
 
+export const bulkDeleteClientsSchema = z.object({
+  ids: z.array(z.string().uuid('ID de cliente inválido')).min(1, 'Informe ao menos um ID').max(200, 'Máximo de 200 IDs por requisição'),
+});
+
 export type CreateClientInput = z.infer<typeof createClientSchema>;
 export type UpdateClientInput = z.infer<typeof updateClientSchema>;
 export type AddActivityInput = z.infer<typeof addActivitySchema>;
+export type BulkDeleteClientsInput = z.infer<typeof bulkDeleteClientsSchema>;

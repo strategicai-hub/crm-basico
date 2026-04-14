@@ -13,6 +13,8 @@ export const clientsApi = {
 
   remove: (id: string) => api.delete(`/clients/${id}`),
 
+  bulkRemove: (ids: string[]) => api.post('/clients/bulk-delete', { ids }),
+
   getActivities: (id: string) => api.get(`/clients/${id}/activities`),
 
   addActivity: (id: string, data: { type: string; content: string }) =>

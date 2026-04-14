@@ -14,4 +14,6 @@ export const dealsApi = {
     api.patch(`/deals/${id}/stage`, data),
 
   remove: (id: string) => api.delete(`/deals/${id}`),
+
+  bulkRemove: (ids: string[]) => api.post('/deals/bulk-delete', { ids }),
 };

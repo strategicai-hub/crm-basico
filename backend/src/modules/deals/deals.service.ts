@@ -156,3 +156,10 @@ export async function deleteDeal(id: string, ownerFilter: any) {
 
   await prisma.deal.delete({ where: { id } });
 }
+
+export async function bulkDeleteDeals(ids: string[], ownerFilter: any) {
+  const result = await prisma.deal.deleteMany({
+    where: { id: { in: ids }, ...ownerFilter },
+  });
+  return { count: result.count };
+}

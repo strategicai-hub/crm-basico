@@ -10,6 +10,7 @@ router.use(authenticate, ownershipFilter);
 router.get('/', dealsController.list);
 router.get('/:id', dealsController.get);
 router.post('/', dealsController.create);
+router.post('/bulk-delete', dealsController.bulkRemove);
 router.patch('/:id', dealsController.update);
 router.patch('/:id/stage', dealsController.move);
 router.delete('/:id', dealsController.remove);

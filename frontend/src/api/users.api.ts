@@ -12,4 +12,6 @@ export const usersApi = {
   update: (id: string, data: any) => api.patch(`/users/${id}`, data),
 
   remove: (id: string) => api.delete(`/users/${id}`),
+
+  bulkRemove: (ids: string[]) => api.post('/users/bulk-delete', { ids }),
 };

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createDealSchema, updateDealSchema, moveDealSchema } from './deals.schema';
+import { createDealSchema, updateDealSchema, moveDealSchema, bulkDeleteDealsSchema } from './deals.schema';
 import * as dealsService from './deals.service';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
@@ -54,6 +54,16 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     await dealsService.deleteDeal(req.params.id, req.ownerFilter!);
     res.json({ message: 'Negócio removido' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function bulkRemove(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { ids } = bulkDeleteDealsSchema.parse(req.body);
+    const result = await dealsService.bulkDeleteDeals(ids, req.ownerFilter!);
+    res.json(result);
   } catch (err) {
     next(err);
   }

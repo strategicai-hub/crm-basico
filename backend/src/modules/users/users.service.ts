@@ -61,3 +61,22 @@ export async function updateUser(id: string, data: UpdateUserInput) {
 export async function deleteUser(id: string) {
   await prisma.user.update({ where: { id }, data: { active: false } });
 }
+
+export async function bulkDeactivateUsers(ids: string[], currentUserId: string) {
+  if (ids.includes(currentUserId)) {
+    throw { status: 400, message: 'Você não pode desativar seu próprio usuário' };
+  }
+
+  const remainingAdmins = await prisma.user.count({
+    where: { role: 'ADMIN', active: true, id: { notIn: ids } },
+  });
+  if (remainingAdmins === 0) {
+    throw { status: 400, message: 'Não é possível desativar o último administrador ativo' };
+  }
+
+  const result = await prisma.user.updateMany({
+    where: { id: { in: ids }, active: true },
+    data: { active: false },
+  });
+  return { count: result.count };
+}

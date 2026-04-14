@@ -30,6 +30,8 @@ export function ClientsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', notes: '' });
   const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -98,7 +100,40 @@ export function ClientsPage() {
     setLoading(true);
     try {
       await clientsApi.remove(deleteTarget.id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(deleteTarget.id);
+        return next;
+      });
       setDeleteTarget(null);
+      fetchClients(pagination.page);
+    } catch {}
+    setLoading(false);
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedIds(new Set(clients.map((c) => c.id)));
+    else clearSelection();
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setLoading(true);
+    try {
+      await clientsApi.bulkRemove(Array.from(selectedIds));
+      clearSelection();
+      setBulkDeleteOpen(false);
       fetchClients(pagination.page);
     } catch {}
     setLoading(false);
@@ -121,10 +156,41 @@ export function ClientsPage() {
         className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
       />
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+          <span className="text-sm text-blue-800">
+            {selectedIds.size} cliente(s) selecionado(s)
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={clearSelection}
+              className="px-3 py-1 text-xs bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+            >
+              Limpar seleção
+            </button>
+            <button
+              onClick={() => setBulkDeleteOpen(true)}
+              className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 font-medium"
+            >
+              Excluir selecionados
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-4 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={clients.length > 0 && clients.every((c) => selectedIds.has(c.id))}
+                  onChange={(e) => toggleSelectAll(e.target.checked)}
+                  title="Selecionar todos"
+                  className="cursor-pointer"
+                />
+              </th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Nome</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Telefone</th>
@@ -136,6 +202,14 @@ export function ClientsPage() {
           <tbody className="divide-y divide-gray-100">
             {clients.map((client) => (
               <tr key={client.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(client.id)}
+                    onChange={() => toggleSelection(client.id)}
+                    className="cursor-pointer"
+                  />
+                </td>
                 <td
                   className="px-4 py-3 text-sm font-medium text-blue-600 cursor-pointer hover:underline"
                   onClick={() => navigate(`/clientes/${client.id}`)}
@@ -154,7 +228,7 @@ export function ClientsPage() {
             ))}
             {clients.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">Nenhum cliente encontrado.</td>
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">Nenhum cliente encontrado.</td>
               </tr>
             )}
           </tbody>
@@ -240,7 +314,16 @@ export function ClientsPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Excluir Cliente"
-        message={`Tem certeza que deseja excluir o cliente "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir o cliente "${deleteTarget?.name}"? Todos os negócios associados serão removidos em cascata. Esta ação não pode ser desfeita.`}
+        loading={loading}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Excluir Clientes"
+        message={`Tem certeza que deseja excluir ${selectedIds.size} cliente(s)? Todos os negócios associados serão removidos em cascata. Esta ação não pode ser desfeita.`}
         loading={loading}
       />
     </div>

@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { usersApi } from '../api/users.api';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { useAuthStore } from '../store/authStore';
 
 interface User {
   id: string;
@@ -12,11 +14,15 @@ interface User {
 }
 
 export function UsersPage() {
+  const currentUser = useAuthStore((s) => s.user);
   const [users, setUsers] = useState<User[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'USER' });
   const [loading, setLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const copyId = useCallback((id: string) => {
     navigator.clipboard.writeText(id);
@@ -56,6 +62,39 @@ export function UsersPage() {
     fetchUsers();
   };
 
+  const selectableUsers = users.filter((u) => u.id !== currentUser?.id && u.active);
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedIds(new Set(selectableUsers.map((u) => u.id)));
+    else clearSelection();
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setLoading(true);
+    setBulkError(null);
+    try {
+      await usersApi.bulkRemove(Array.from(selectedIds));
+      clearSelection();
+      setBulkDeleteOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      setBulkError(err?.response?.data?.message || 'Erro ao desativar usuários');
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -65,10 +104,47 @@ export function UsersPage() {
         </button>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+          <span className="text-sm text-blue-800">
+            {selectedIds.size} usuário(s) selecionado(s)
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={clearSelection}
+              className="px-3 py-1 text-xs bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+            >
+              Limpar seleção
+            </button>
+            <button
+              onClick={() => { setBulkError(null); setBulkDeleteOpen(true); }}
+              className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 font-medium"
+            >
+              Excluir selecionados
+            </button>
+          </div>
+        </div>
+      )}
+
+      {bulkError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-2 text-sm">
+          {bulkError}
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-4 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={selectableUsers.length > 0 && selectableUsers.every((u) => selectedIds.has(u.id))}
+                  onChange={(e) => toggleSelectAll(e.target.checked)}
+                  title="Selecionar todos"
+                  className="cursor-pointer"
+                />
+              </th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">ID</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Nome</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
@@ -79,8 +155,26 @@ export function UsersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {users.map((user) => (
+            {users.map((user) => {
+              const disabled = user.id === currentUser?.id || !user.active;
+              return (
               <tr key={user.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(user.id)}
+                    onChange={() => toggleSelection(user.id)}
+                    disabled={disabled}
+                    title={
+                      user.id === currentUser?.id
+                        ? 'Você não pode selecionar seu próprio usuário'
+                        : !user.active
+                        ? 'Usuário já está inativo'
+                        : 'Selecionar'
+                    }
+                    className="cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  />
+                </td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => copyId(user.id)}
@@ -112,7 +206,8 @@ export function UsersPage() {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -170,6 +265,15 @@ export function UsersPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Excluir Usuários"
+        message={`Os ${selectedIds.size} usuário(s) selecionado(s) serão desativados. Os dados associados (clientes, negócios, atividades) são preservados. Você pode reativá-los depois.`}
+        loading={loading}
+      />
     </div>
   );
 }

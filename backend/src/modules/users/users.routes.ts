@@ -13,6 +13,7 @@ router.use(authenticate, requireRole('ADMIN'));
 
 router.get('/', usersController.list);
 router.post('/', usersController.create);
+router.post('/bulk-delete', usersController.bulkRemove);
 router.patch('/:id', usersController.update);
 router.delete('/:id', usersController.remove);
 
