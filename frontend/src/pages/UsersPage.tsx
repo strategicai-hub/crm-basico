@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { usersApi } from '../api/users.api';
 import { Modal } from '../components/ui/Modal';
 
@@ -13,9 +13,16 @@ interface User {
 
 export function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'USER' });
   const [loading, setLoading] = useState(false);
+
+  const copyId = useCallback((id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }, []);
 
   const fetchUsers = async () => {
     const { data } = await usersApi.list({ limit: 100 });
@@ -62,6 +69,7 @@ export function UsersPage() {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">ID</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Nome</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Perfil</th>
@@ -73,6 +81,15 @@ export function UsersPage() {
           <tbody className="divide-y divide-gray-100">
             {users.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <button
+                    onClick={() => copyId(user.id)}
+                    title={copiedId === user.id ? 'Copiado!' : user.id}
+                    className="font-mono text-xs text-gray-400 hover:text-blue-600 transition-colors"
+                  >
+                    {copiedId === user.id ? 'copiado!' : `${user.id.slice(0, 8)}…`}
+                  </button>
+                </td>
                 <td className="px-4 py-3 text-sm font-medium">{user.name}</td>
                 <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
                 <td className="px-4 py-3">
