@@ -45,17 +45,40 @@ router.post('/lead', apiKeyAuth, async (req: Request, res: Response, next: NextF
       return res.status(500).json({ error: 'Nenhuma etapa do pipeline encontrada' });
     }
 
-    // Criar o cliente
-    const client = await prisma.client.create({
-      data: {
-        name: data.name,
-        phone: data.phone,
-        company: data.company ?? null,
-        ownerId,
+    // Deduplicação por telefone: reutiliza cliente existente se já houver
+    let client = await prisma.client.findFirst({ where: { phone: data.phone } });
+    let clientReused = false;
+
+    if (client) {
+      clientReused = true;
+    } else {
+      client = await prisma.client.create({
+        data: {
+          name: data.name,
+          phone: data.phone,
+          company: data.company ?? null,
+          ownerId,
+        },
+      });
+    }
+
+    // Se o cliente já tem um deal em etapa aberta (OPEN), reutiliza ao invés de criar novo
+    const existingOpenDeal = await prisma.deal.findFirst({
+      where: {
+        clientId: client.id,
+        stage: { type: 'OPEN' },
       },
+      orderBy: { createdAt: 'desc' },
     });
 
-    // Criar o deal na primeira etapa
+    if (existingOpenDeal) {
+      return res.status(200).json({
+        client,
+        deal: existingOpenDeal,
+        reused: { client: clientReused, deal: true },
+      });
+    }
+
     const deal = await prisma.deal.create({
       data: {
         title: `Lead WhatsApp - ${data.name}`,
@@ -65,7 +88,7 @@ router.post('/lead', apiKeyAuth, async (req: Request, res: Response, next: NextF
       },
     });
 
-    res.status(201).json({ client, deal });
+    res.status(201).json({ client, deal, reused: { client: clientReused, deal: false } });
   } catch (err) {
     next(err);
   }
