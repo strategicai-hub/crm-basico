@@ -94,4 +94,156 @@ router.post('/lead', apiKeyAuth, async (req: Request, res: Response, next: NextF
   }
 });
 
+// ---------- Integrações usadas pelo bot Telegram ----------
+
+function normalizePhone(raw: string): string {
+  return raw.replace(/\D/g, '');
+}
+
+// GET /deals?phone=<phone>
+// Busca cliente pelo sufixo do telefone (tolerante a DDI/DDD) e retorna seus deals
+router.get('/deals', apiKeyAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const phone = typeof req.query.phone === 'string' ? req.query.phone : '';
+    if (!phone) {
+      return res.status(400).json({ error: 'Parâmetro phone é obrigatório' });
+    }
+
+    const normalized = normalizePhone(phone);
+    const suffix = normalized.slice(-8);
+
+    const clients = await prisma.client.findMany({
+      where: { phone: { contains: suffix } },
+      include: {
+        deals: {
+          include: { stage: true },
+          orderBy: { updatedAt: 'desc' },
+        },
+      },
+    });
+
+    if (clients.length === 0) {
+      return res.status(404).json({ error: 'Cliente não encontrado pelo telefone' });
+    }
+
+    const best =
+      clients.find((c) => c.deals.some((d) => d.stage.type === 'OPEN')) ?? clients[0];
+
+    res.json({
+      client: {
+        id: best.id,
+        name: best.name,
+        phone: best.phone,
+        company: best.company,
+        email: best.email,
+      },
+      deals: best.deals.map((d) => ({
+        id: d.id,
+        title: d.title,
+        value: d.value,
+        stage: {
+          id: d.stage.id,
+          key: d.stage.key,
+          label: d.stage.label,
+          type: d.stage.type,
+        },
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /deals/:id/stage
+// Move um deal para outra etapa (identificada por stageKey, mais estável que stageId)
+const moveStageSchema = z.object({
+  stageKey: z.string().min(1),
+  note: z.string().optional(),
+});
+
+router.patch(
+  '/deals/:id/stage',
+  apiKeyAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const body = moveStageSchema.parse(req.body);
+
+      const stage = await prisma.stage.findUnique({ where: { key: body.stageKey } });
+      if (!stage) {
+        return res.status(404).json({ error: `Etapa '${body.stageKey}' não encontrada` });
+      }
+
+      const deal = await prisma.deal.findUnique({
+        where: { id },
+        include: { stage: true },
+      });
+      if (!deal) {
+        return res.status(404).json({ error: 'Deal não encontrado' });
+      }
+
+      const updated = await prisma.deal.update({
+        where: { id },
+        data: {
+          stageId: stage.id,
+          closedAt: stage.type === 'WON' ? new Date() : null,
+        },
+        include: { stage: true },
+      });
+
+      if (body.note) {
+        await prisma.activity.create({
+          data: {
+            type: 'stage_move',
+            content: body.note,
+            dealId: updated.id,
+            clientId: updated.clientId,
+            userId: updated.ownerId,
+          },
+        });
+      }
+
+      res.json({
+        id: updated.id,
+        title: updated.title,
+        stage: {
+          id: updated.stage.id,
+          key: updated.stage.key,
+          label: updated.stage.label,
+          type: updated.stage.type,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /stages/stats
+// Retorna cada etapa do pipeline com a contagem de deals
+router.get(
+  '/stages/stats',
+  apiKeyAuth,
+  async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const stages = await prisma.stage.findMany({ orderBy: { position: 'asc' } });
+      const grouped = await prisma.deal.groupBy({
+        by: ['stageId'],
+        _count: { _all: true },
+      });
+      const countByStage = new Map(grouped.map((g) => [g.stageId, g._count._all]));
+
+      const result = stages.map((s) => ({
+        id: s.id,
+        key: s.key,
+        label: s.label,
+        count: countByStage.get(s.id) ?? 0,
+      }));
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 export default router;
