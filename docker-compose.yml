@@ -28,6 +28,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER:-crm}:${DB_PASSWORD}@postgres:5432/crm_basico
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:?ACCESS_TOKEN_SECRET is required}
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:?REFRESH_TOKEN_SECRET is required}
+      INTEGRATION_API_KEY: ${INTEGRATION_API_KEY}
       PORT: 3000
       NODE_ENV: production
     networks:
