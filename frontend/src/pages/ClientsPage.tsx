@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { clientsApi } from '../api/clients.api';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
@@ -31,6 +31,7 @@ export function ClientsPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', notes: '' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchClients = useCallback(async (page = 1) => {
     const { data } = await clientsApi.list({ page, search: search || undefined });
@@ -42,6 +43,22 @@ export function ClientsPage() {
     const timer = setTimeout(() => fetchClients(), 300);
     return () => clearTimeout(timer);
   }, [fetchClients]);
+
+  useEffect(() => {
+    const editId = (location.state as { editClientId?: string } | null)?.editClientId;
+    if (!editId) return;
+    const target = clients.find((c) => c.id === editId);
+    if (target) {
+      openEdit(target);
+      navigate(location.pathname, { replace: true, state: null });
+    } else {
+      clientsApi.get(editId).then(({ data }) => {
+        openEdit(data);
+        navigate(location.pathname, { replace: true, state: null });
+      }).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, clients]);
 
   const openCreate = () => {
     setEditClient(null);

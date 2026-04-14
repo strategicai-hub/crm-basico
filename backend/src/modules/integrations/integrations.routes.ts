@@ -10,20 +10,30 @@ const createLeadSchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(1),
   company: z.string().optional(),
+  ownerId: z.string().uuid().optional(),
 });
 
 router.post('/lead', apiKeyAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = createLeadSchema.parse(req.body);
 
-    // Buscar o primeiro usuário ADMIN para atribuir como owner
-    const adminUser = await prisma.user.findFirst({
-      where: { role: 'ADMIN' },
-      orderBy: { createdAt: 'asc' },
-    });
+    // Resolver o owner: usar o ownerId informado ou fallback para o primeiro ADMIN
+    let ownerId = data.ownerId;
 
-    if (!adminUser) {
-      return res.status(500).json({ error: 'Nenhum usuário ADMIN encontrado no sistema' });
+    if (ownerId) {
+      const userExists = await prisma.user.findUnique({ where: { id: ownerId } });
+      if (!userExists) {
+        return res.status(400).json({ error: 'Usuário responsável não encontrado' });
+      }
+    } else {
+      const adminUser = await prisma.user.findFirst({
+        where: { role: 'ADMIN' },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (!adminUser) {
+        return res.status(500).json({ error: 'Nenhum usuário ADMIN encontrado no sistema' });
+      }
+      ownerId = adminUser.id;
     }
 
     // Buscar a primeira etapa do pipeline
@@ -41,7 +51,7 @@ router.post('/lead', apiKeyAuth, async (req: Request, res: Response, next: NextF
         name: data.name,
         phone: data.phone,
         company: data.company ?? null,
-        ownerId: adminUser.id,
+        ownerId,
       },
     });
 
@@ -51,7 +61,7 @@ router.post('/lead', apiKeyAuth, async (req: Request, res: Response, next: NextF
         title: `Lead WhatsApp - ${data.name}`,
         clientId: client.id,
         stageId: firstStage.id,
-        ownerId: adminUser.id,
+        ownerId,
       },
     });
 

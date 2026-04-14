@@ -529,10 +529,10 @@ export function PipelinePage() {
             {editingDeal && (
               <button
                 type="button"
-                onClick={() => navigate(`/clientes/${editingDeal.client.id}`)}
+                onClick={() => navigate('/clientes', { state: { editClientId: editingDeal.client.id } })}
                 className="flex-1 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
               >
-                👁️ Ver cliente
+                ✏️ Editar cliente
               </button>
             )}
           </div>
