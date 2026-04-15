@@ -32,7 +32,7 @@ interface Deal {
   stageId: string;
   position: number;
   createdAt: string;
-  client: { id: string; name: string; company: string | null };
+  client: { id: string; name: string; company: string | null; phone: string | null };
   owner: { id: string; name: string };
   stage: { id: string; key: string; label: string; color: string; type: StageType; position: number };
   origin: LeadOrigin | null;
@@ -51,6 +51,14 @@ interface DealColFilters {
 }
 
 const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
+
+const formatPhone = (raw: string) => {
+  const digits = raw.replace(/\D/g, '');
+  const local = digits.startsWith('55') && digits.length > 11 ? digits.slice(2) : digits;
+  if (local.length === 11) return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
+  if (local.length === 10) return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+  return raw;
+};
 
 interface ClientOption {
   id: string;
@@ -506,7 +514,9 @@ export function PipelinePage() {
                               />
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{deal.title}</p>
-                                <p className="text-xs text-gray-500 mt-1">{deal.client.name}</p>
+                                {deal.client.phone && (
+                                  <p className="text-xs text-gray-500 mt-1">{formatPhone(deal.client.phone)}</p>
+                                )}
                                 {deal.client.company && (
                                   <p className="text-xs text-gray-400">{deal.client.company}</p>
                                 )}
@@ -515,7 +525,9 @@ export function PipelinePage() {
                                     {formatCurrency(deal.value)}
                                   </p>
                                 )}
-                                <p className="text-xs text-gray-400 mt-1">{deal.owner.name}</p>
+                                <span className="inline-block mt-2 px-2 py-0.5 text-xs text-gray-700 bg-gray-200 rounded-full">
+                                  {deal.owner.name}
+                                </span>
                               </div>
                               <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
