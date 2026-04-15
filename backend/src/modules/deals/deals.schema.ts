@@ -5,6 +5,7 @@ export const createDealSchema = z.object({
   value: z.number().positive().optional(),
   clientId: z.string().uuid('ID do cliente inválido'),
   stageId: z.string().uuid('ID da etapa inválido'),
+  originId: z.string().uuid('ID da origem inválido').optional().nullable(),
 });
 
 export const updateDealSchema = z.object({
@@ -13,6 +14,7 @@ export const updateDealSchema = z.object({
   stageId: z.string().uuid('ID da etapa inválido').optional(),
   position: z.number().int().min(0).optional(),
   ownerId: z.string().uuid('ID do responsável inválido').optional(),
+  originId: z.string().uuid('ID da origem inválido').optional().nullable(),
 });
 
 export const moveDealSchema = z.object({

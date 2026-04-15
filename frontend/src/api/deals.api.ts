@@ -5,7 +5,7 @@ export const dealsApi = {
 
   get: (id: string) => api.get(`/deals/${id}`),
 
-  create: (data: { title: string; value?: number; clientId: string; stageId: string }) =>
+  create: (data: { title: string; value?: number; clientId: string; stageId: string; originId?: string | null }) =>
     api.post('/deals', data),
 
   update: (id: string, data: any) => api.patch(`/deals/${id}`, data),

@@ -5,6 +5,7 @@ import { dealsApi } from '../api/deals.api';
 import { clientsApi } from '../api/clients.api';
 import { usersApi } from '../api/users.api';
 import { stagesApi } from '../api/stages.api';
+import { originsApi } from '../api/origins.api';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
@@ -19,6 +20,11 @@ interface Stage {
   type: StageType;
 }
 
+interface LeadOrigin {
+  id: string;
+  name: string;
+}
+
 interface Deal {
   id: string;
   title: string;
@@ -28,6 +34,7 @@ interface Deal {
   client: { id: string; name: string; company: string | null };
   owner: { id: string; name: string };
   stage: { id: string; key: string; label: string; color: string; type: StageType; position: number };
+  origin: LeadOrigin | null;
 }
 
 interface ClientOption {
@@ -68,9 +75,10 @@ export function PipelinePage() {
   const [stageConfigOpen, setStageConfigOpen] = useState(false);
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [form, setForm] = useState({ title: '', value: '', clientId: '', stageId: '' });
+  const [origins, setOrigins] = useState<LeadOrigin[]>([]);
+  const [form, setForm] = useState({ title: '', value: '', clientId: '', stageId: '', originId: '' });
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', value: '', stageId: '', ownerId: '' });
+  const [editForm, setEditForm] = useState({ title: '', value: '', stageId: '', ownerId: '', originId: '' });
   const [newStageLabel, setNewStageLabel] = useState('');
   const [newStageColor, setNewStageColor] = useState('bg-gray-100 border-gray-300');
   const [newStageType, setNewStageType] = useState<StageType>('OPEN');
@@ -90,9 +98,15 @@ export function PipelinePage() {
     setColumns(data);
   };
 
+  const fetchOrigins = async () => {
+    const { data } = await originsApi.list();
+    setOrigins(data);
+  };
+
   useEffect(() => {
     fetchStages();
     fetchDeals();
+    fetchOrigins();
     localStorage.removeItem('crm_stage_config');
     localStorage.removeItem('crm_stages');
   }, []);
@@ -100,7 +114,7 @@ export function PipelinePage() {
   const openCreate = async () => {
     const { data } = await clientsApi.list({ limit: 100 });
     setClients(data.data.map((c: any) => ({ id: c.id, name: c.name })));
-    setForm({ title: '', value: '', clientId: '', stageId: stages[0]?.id || '' });
+    setForm({ title: '', value: '', clientId: '', stageId: stages[0]?.id || '', originId: '' });
     setModalOpen(true);
   };
 
@@ -114,6 +128,7 @@ export function PipelinePage() {
         value: form.value ? parseFloat(form.value) : undefined,
         clientId: form.clientId,
         stageId: form.stageId,
+        originId: form.originId || null,
       });
       setModalOpen(false);
       fetchDeals();
@@ -128,6 +143,7 @@ export function PipelinePage() {
       value: deal.value?.toString() || '',
       stageId: deal.stageId,
       ownerId: deal.owner.id,
+      originId: deal.origin?.id || '',
     });
     try {
       const { data } = await usersApi.listMinimal();
@@ -148,6 +164,7 @@ export function PipelinePage() {
         value: editForm.value ? parseFloat(editForm.value) : null,
         stageId: editForm.stageId,
         ownerId: editForm.ownerId || undefined,
+        originId: editForm.originId || null,
       });
       setEditModalOpen(false);
       fetchDeals();
@@ -579,6 +596,19 @@ export function PipelinePage() {
               ))}
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Origem</label>
+            <select
+              value={form.originId}
+              onChange={(e) => setForm({ ...form, originId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Sem origem</option>
+              {origins.map((o) => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex justify-end gap-3">
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200">
               Cancelar
@@ -635,6 +665,30 @@ export function PipelinePage() {
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Origem</label>
+            <div className="flex items-center gap-2">
+              <select
+                value={editForm.originId}
+                onChange={(e) => setEditForm({ ...editForm, originId: e.target.value })}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Sem origem</option>
+                {origins.map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+              <a
+                href="/configuracoes"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 text-gray-400 hover:text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                title="Gerenciar origens"
+              >
+                ⚙️
+              </a>
+            </div>
           </div>
           <div className="flex gap-2">
             {editingDeal && (

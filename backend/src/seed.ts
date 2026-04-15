@@ -1,4 +1,6 @@
 import { PrismaClient, Role, StageType } from '@prisma/client';
+
+const defaultOrigins = ['Google Ads', 'Disparos', 'SDR'];
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -34,9 +36,21 @@ async function seedAdmin() {
   console.log(`Admin criado: ${admin.email}`);
 }
 
+async function seedOrigins() {
+  for (const name of defaultOrigins) {
+    await prisma.leadOrigin.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log(`Origens de lead verificadas: ${defaultOrigins.length}`);
+}
+
 async function main() {
   await seedStages();
   await seedAdmin();
+  await seedOrigins();
 }
 
 main()

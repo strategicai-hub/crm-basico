@@ -7,6 +7,7 @@ const dealInclude = {
   client: { select: { id: true, name: true, company: true } },
   owner: { select: { id: true, name: true } },
   stage: { select: { id: true, key: true, label: true, color: true, type: true, position: true } },
+  origin: { select: { id: true, name: true } },
 } as const;
 
 async function getStageOrThrow(stageId: string) {
@@ -70,6 +71,7 @@ export async function createDeal(data: CreateDealInput, ownerId: string) {
       position: (maxPosition._max.position ?? -1) + 1,
       clientId: data.clientId,
       ownerId,
+      originId: data.originId ?? null,
       closedAt: stage.type === StageType.OPEN ? null : new Date(),
     },
     include: dealInclude,
@@ -88,6 +90,7 @@ export async function updateDeal(id: string, data: UpdateDealInput, ownerFilter:
     value: data.value,
     position: data.position,
     ownerId: data.ownerId,
+    originId: data.originId,
   };
 
   if (data.stageId && data.stageId !== existing.stageId) {

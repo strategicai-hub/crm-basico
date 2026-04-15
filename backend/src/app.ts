@@ -10,6 +10,7 @@ import stagesRoutes from './modules/stages/stages.routes';
 import tasksRoutes from './modules/tasks/tasks.routes';
 import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import integrationsRoutes from './modules/integrations/integrations.routes';
+import originsRoutes from './modules/origins/origins.routes';
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/stages', stagesRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/integrations', integrationsRoutes);
+app.use('/api/origins', originsRoutes);
 
 app.use(errorHandler);
 

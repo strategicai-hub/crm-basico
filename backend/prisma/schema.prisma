@@ -101,18 +101,30 @@ model Deal {
   position  Int       @default(0)
   clientId  String    @map("client_id")
   ownerId   String    @map("owner_id")
+  originId  String?   @map("origin_id")
   closedAt  DateTime? @map("closed_at")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  stage      Stage      @relation(fields: [stageId], references: [id])
-  client     Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  owner      User       @relation(fields: [ownerId], references: [id])
+  stage      Stage       @relation(fields: [stageId], references: [id])
+  client     Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  owner      User        @relation(fields: [ownerId], references: [id])
+  origin     LeadOrigin? @relation(fields: [originId], references: [id])
   activities Activity[]
 
   @@index([ownerId])
   @@index([stageId])
   @@map("deals")
+}
+
+model LeadOrigin {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  deals Deal[]
+
+  @@map("lead_origins")
 }
 
 model Task {

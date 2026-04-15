@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { authApi } from '../api/auth.api';
+import { originsApi } from '../api/origins.api';
 import { useAuthStore } from '../store/authStore';
+
+interface LeadOrigin {
+  id: string;
+  name: string;
+}
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -23,6 +29,47 @@ export function SettingsPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordError, setPasswordError] = useState('');
+
+  const [origins, setOrigins] = useState<LeadOrigin[]>([]);
+  const [newOriginName, setNewOriginName] = useState('');
+  const [originLoading, setOriginLoading] = useState(false);
+  const [originError, setOriginError] = useState('');
+
+  useEffect(() => {
+    fetchOrigins();
+  }, []);
+
+  const fetchOrigins = async () => {
+    try {
+      const { data } = await originsApi.list();
+      setOrigins(data);
+    } catch {}
+  };
+
+  const handleAddOrigin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOriginName.trim()) return;
+    setOriginError('');
+    setOriginLoading(true);
+    try {
+      await originsApi.create({ name: newOriginName.trim() });
+      setNewOriginName('');
+      await fetchOrigins();
+    } catch (err: any) {
+      setOriginError(err.response?.data?.message || 'Erro ao adicionar origem.');
+    }
+    setOriginLoading(false);
+  };
+
+  const handleDeleteOrigin = async (id: string) => {
+    setOriginError('');
+    try {
+      await originsApi.remove(id);
+      await fetchOrigins();
+    } catch (err: any) {
+      setOriginError(err.response?.data?.message || 'Erro ao remover origem.');
+    }
+  };
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +123,49 @@ export function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold">Configurações</h1>
+
+      {/* Origens de Lead */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold mb-4">Origens de Lead</h2>
+
+        {originError && (
+          <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg mb-3">{originError}</p>
+        )}
+
+        <ul className="space-y-2 mb-4">
+          {origins.length === 0 && (
+            <li className="text-sm text-gray-500">Nenhuma origem cadastrada.</li>
+          )}
+          {origins.map((o) => (
+            <li key={o.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+              <span className="text-sm text-gray-800">{o.name}</span>
+              <button
+                type="button"
+                onClick={() => handleDeleteOrigin(o.id)}
+                className="text-red-500 hover:text-red-700 text-sm font-medium"
+              >
+                Remover
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <form onSubmit={handleAddOrigin} className="flex gap-2">
+          <input
+            value={newOriginName}
+            onChange={(e) => setNewOriginName(e.target.value)}
+            placeholder="Nova origem (ex: Instagram)"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          />
+          <button
+            type="submit"
+            disabled={originLoading || !newOriginName.trim()}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {originLoading ? 'Adicionando...' : 'Adicionar'}
+          </button>
+        </form>
+      </div>
 
       {/* Dados do Perfil */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
