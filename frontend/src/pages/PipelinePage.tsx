@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { dealsApi } from '../api/deals.api';
@@ -6,6 +6,7 @@ import { clientsApi } from '../api/clients.api';
 import { usersApi } from '../api/users.api';
 import { stagesApi } from '../api/stages.api';
 import { originsApi } from '../api/origins.api';
+import { useAuthStore } from '../store/authStore';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
@@ -146,6 +147,28 @@ export function PipelinePage() {
     fetchOrigins();
     localStorage.removeItem('crm_stage_config');
     localStorage.removeItem('crm_stages');
+  }, []);
+
+  const refetchTimer = useRef<number | null>(null);
+  useEffect(() => {
+    const token = useAuthStore.getState().accessToken;
+    if (!token) return;
+
+    const scheduleRefetch = () => {
+      if (refetchTimer.current) window.clearTimeout(refetchTimer.current);
+      refetchTimer.current = window.setTimeout(() => {
+        fetchDeals();
+      }, 300);
+    };
+
+    const url = `/api/deals/stream?token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
+    es.addEventListener('deals:changed', scheduleRefetch);
+
+    return () => {
+      if (refetchTimer.current) window.clearTimeout(refetchTimer.current);
+      es.close();
+    };
   }, []);
 
   const openCreate = async () => {

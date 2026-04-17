@@ -1,5 +1,6 @@
 import { PrismaClient, StageType } from '@prisma/client';
 import { CreateDealInput, UpdateDealInput, MoveDealInput } from './deals.schema';
+import { emitDealsChanged } from '../../events/dealsBus';
 
 const prisma = new PrismaClient();
 
@@ -63,7 +64,7 @@ export async function createDeal(data: CreateDealInput, ownerId: string) {
     _max: { position: true },
   });
 
-  return prisma.deal.create({
+  const created = await prisma.deal.create({
     data: {
       title: data.title,
       value: data.value,
@@ -77,6 +78,8 @@ export async function createDeal(data: CreateDealInput, ownerId: string) {
     },
     include: dealInclude,
   });
+  emitDealsChanged({ action: 'created', source: 'app' });
+  return created;
 }
 
 export async function updateDeal(id: string, data: UpdateDealInput, ownerFilter: any) {
@@ -106,11 +109,13 @@ export async function updateDeal(id: string, data: UpdateDealInput, ownerFilter:
     }
   }
 
-  return prisma.deal.update({
+  const updated = await prisma.deal.update({
     where: { id },
     data: updateData,
     include: dealInclude,
   });
+  emitDealsChanged({ action: 'updated', source: 'app' });
+  return updated;
 }
 
 export async function moveDeal(id: string, data: MoveDealInput, userId: string, ownerFilter: any) {
@@ -153,6 +158,7 @@ export async function moveDeal(id: string, data: MoveDealInput, userId: string, 
     });
   }
 
+  emitDealsChanged({ action: 'moved', source: 'app' });
   return deal;
 }
 
@@ -161,11 +167,13 @@ export async function deleteDeal(id: string, ownerFilter: any) {
   if (!existing) throw { status: 404, message: 'Negócio não encontrado' };
 
   await prisma.deal.delete({ where: { id } });
+  emitDealsChanged({ action: 'deleted', source: 'app' });
 }
 
 export async function bulkDeleteDeals(ids: string[], ownerFilter: any) {
   const result = await prisma.deal.deleteMany({
     where: { id: { in: ids }, ...ownerFilter },
   });
+  if (result.count > 0) emitDealsChanged({ action: 'deleted', source: 'app' });
   return { count: result.count };
 }

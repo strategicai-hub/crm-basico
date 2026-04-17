@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { apiKeyAuth } from '../../middleware/apiKeyAuth';
+import { emitDealsChanged } from '../../events/dealsBus';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -101,6 +102,7 @@ router.post('/lead', apiKeyAuth, async (req: Request, res: Response, next: NextF
       },
     });
 
+    emitDealsChanged({ action: 'created', source: 'integration' });
     res.status(201).json({ client, deal, reused: { client: clientReused, deal: false } });
   } catch (err) {
     next(err);
@@ -222,6 +224,7 @@ router.patch(
         });
       }
 
+      emitDealsChanged({ action: 'moved', source: 'integration' });
       res.json({
         id: updated.id,
         title: updated.title,
@@ -251,6 +254,7 @@ router.delete(
         return res.status(404).json({ error: 'Deal não encontrado' });
       }
       await prisma.deal.delete({ where: { id } });
+      emitDealsChanged({ action: 'deleted', source: 'integration' });
       res.status(204).send();
     } catch (err) {
       next(err);

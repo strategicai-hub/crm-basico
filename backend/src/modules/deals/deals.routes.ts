@@ -2,8 +2,11 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/auth';
 import { ownershipFilter } from '../../middleware/ownership';
 import * as dealsController from './deals.controller';
+import { dealsStream } from './deals.sse';
 
 const router = Router();
+
+router.get('/stream', dealsStream);
 
 router.use(authenticate, ownershipFilter);
 
