@@ -517,7 +517,7 @@ export function PipelinePage() {
 
       {viewMode === 'kanban' && (
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 flex-shrink-0 snap-x snap-mandatory touch-pan-x -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto overflow-y-auto pb-4 sm:flex-shrink-0 snap-x snap-mandatory touch-pan-x -mx-4 px-4 sm:mx-0 sm:px-0">
           {stages.map((stage) => {
             const stageDeals = columns[stage.id] || [];
             const stageTotal = stageDeals.reduce((s, d) => s + Number(d.value || 0), 0);
@@ -1297,13 +1297,22 @@ export function PipelinePage() {
           </div>
           <div className="flex gap-2">
             {editingDeal && (
-              <button
-                type="button"
-                onClick={() => navigate('/clientes', { state: { editClientId: editingDeal.client.id } })}
-                className="flex-1 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
-              >
-                ✏️ Editar cliente
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/clientes/${editingDeal.client.id}`)}
+                  className="flex-1 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  👁️ Ver cliente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/clientes', { state: { editClientId: editingDeal.client.id } })}
+                  className="flex-1 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
+                >
+                  ✏️ Editar cliente
+                </button>
+              </>
             )}
           </div>
           <div className="flex justify-end gap-3">
