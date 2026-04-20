@@ -450,7 +450,7 @@ export function PipelinePage() {
   };
 
   return (
-    <div className="space-y-3 sm:space-y-4 h-full flex flex-col">
+    <div className="space-y-3 sm:space-y-4 sm:h-full sm:flex sm:flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold">Pipeline de Vendas</h1>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
@@ -517,12 +517,12 @@ export function PipelinePage() {
 
       {viewMode === 'kanban' && (
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-3 sm:gap-4 overflow-x-auto overflow-y-auto pb-4 sm:flex-shrink-0 snap-x snap-mandatory touch-pan-x -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
           {stages.map((stage) => {
             const stageDeals = columns[stage.id] || [];
             const stageTotal = stageDeals.reduce((s, d) => s + Number(d.value || 0), 0);
             return (
-            <div key={stage.id} className={`flex-shrink-0 w-[82vw] max-w-[300px] sm:w-72 sm:max-w-none snap-start rounded-xl border ${stage.color} p-2 sm:p-3`}>
+            <div key={stage.id} className={`flex-shrink-0 w-[82vw] max-w-[300px] sm:w-72 sm:max-w-none rounded-xl border ${stage.color} p-2 sm:p-3`}>
               <div className="mb-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm">{stage.label}</h3>
