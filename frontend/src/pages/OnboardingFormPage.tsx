@@ -72,6 +72,10 @@ export function OnboardingFormPage() {
 
   const canAdvance = () => {
     if (!question) return false;
+    if (question.type === 'upload') {
+      if (!question.required) return true;
+      return uploads.some((u) => u.questionId === question.id);
+    }
     if (!question.required) return true;
     const v = answers[question.id];
     if (v === undefined || v === null) return false;
@@ -109,15 +113,22 @@ export function OnboardingFormPage() {
     }
   };
 
-  const handleUpload = async (questionId: string, file: File) => {
-    if (!token) return;
+  const handleUpload = async (questionId: string, files: File[]) => {
+    if (!token || files.length === 0) return;
+    setError(null);
     try {
-      const { data } = await onboardingFormsApi.uploadFile(token, questionId, file);
-      setUploads((prev) => [...prev.filter((u) => u.questionId !== questionId), data]);
-      setAnswer(questionId, { name: data.name, url: data.url });
+      const results = await Promise.all(
+        files.map((f) => onboardingFormsApi.uploadFile(token, questionId, f))
+      );
+      const newEntries = results.map((r) => r.data);
+      setUploads((prev) => [...prev, ...newEntries]);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Falha no upload.');
     }
+  };
+
+  const removeUpload = (driveFileId: string) => {
+    setUploads((prev) => prev.filter((u) => u.driveFileId !== driveFileId));
   };
 
   if (status === 'loading') {
@@ -185,7 +196,8 @@ export function OnboardingFormPage() {
               allAnswers={answers}
               uploads={uploads}
               onChange={(v) => setAnswer(question.id, v)}
-              onUpload={(file) => handleUpload(question.id, file)}
+              onUpload={(files) => handleUpload(question.id, files)}
+              onRemoveUpload={removeUpload}
             />
             {question.help && (
               <p className="mt-3 text-xs text-gray-500">{question.help}</p>
@@ -242,10 +254,11 @@ interface QuestionViewProps {
   allAnswers: Record<string, unknown>;
   uploads: UploadEntry[];
   onChange: (value: unknown) => void;
-  onUpload: (file: File) => void;
+  onUpload: (files: File[]) => void;
+  onRemoveUpload: (driveFileId: string) => void;
 }
 
-function QuestionView({ question, value, uploads, onChange, onUpload }: QuestionViewProps) {
+function QuestionView({ question, value, uploads, onChange, onUpload, onRemoveUpload }: QuestionViewProps) {
   const inputCls =
     'w-full px-4 py-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#0f4c4c] text-base';
   const labelCls = 'block text-lg md:text-xl font-semibold text-gray-900 mb-4';
@@ -446,56 +459,63 @@ function QuestionView({ question, value, uploads, onChange, onUpload }: Question
   }
 
   if (question.type === 'upload') {
-    const existing = uploads.find((u) => u.questionId === question.id);
+    const existing = uploads.filter((u) => u.questionId === question.id);
     return (
       <div>
         <label className={labelCls}>
           {question.label}
           {question.required && <span className="text-red-500 ml-1">*</span>}
         </label>
-        {existing ? (
-          <div className="rounded-lg border border-gray-300 p-4 flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{existing.name}</p>
-              <a
-                href={existing.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-[#0f4c4c] underline"
+
+        {existing.length > 0 && (
+          <div className="space-y-2 mb-3">
+            {existing.map((u) => (
+              <div
+                key={u.driveFileId}
+                className="rounded-lg border border-gray-300 p-3 flex items-center justify-between gap-2"
               >
-                Ver arquivo
-              </a>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                onChange(undefined);
-                const inp = document.getElementById(`upload-${question.id}`) as HTMLInputElement;
-                if (inp) inp.value = '';
-              }}
-              className="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded"
-            >
-              Trocar
-            </button>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 truncate">{u.name}</p>
+                  <a
+                    href={u.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[#0f4c4c] underline"
+                  >
+                    Ver arquivo
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRemoveUpload(u.driveFileId)}
+                  className="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded whitespace-nowrap"
+                >
+                  Remover
+                </button>
+              </div>
+            ))}
           </div>
-        ) : (
-          <label
-            htmlFor={`upload-${question.id}`}
-            className="block w-full py-8 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-600 cursor-pointer hover:border-[#0f4c4c] hover:text-[#0f4c4c]"
-          >
-            Toque para escolher um arquivo
-            <input
-              id={`upload-${question.id}`}
-              type="file"
-              accept={question.accept ?? 'image/*,application/pdf'}
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onUpload(file);
-              }}
-            />
-          </label>
         )}
+
+        <label
+          htmlFor={`upload-${question.id}`}
+          className="block w-full py-6 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-600 cursor-pointer hover:border-[#0f4c4c] hover:text-[#0f4c4c]"
+        >
+          {existing.length > 0 ? 'Adicionar mais arquivos' : 'Toque para escolher arquivo(s)'}
+          <input
+            id={`upload-${question.id}`}
+            type="file"
+            accept={question.accept ?? 'image/*,application/pdf'}
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              if (files.length > 0) onUpload(files);
+              e.target.value = '';
+            }}
+          />
+        </label>
+
         {question.uploadHint && (
           <p className="text-xs text-gray-500 mt-2">{question.uploadHint}</p>
         )}

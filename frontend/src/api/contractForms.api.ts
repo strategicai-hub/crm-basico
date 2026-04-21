@@ -29,4 +29,6 @@ export const contractFormsApi = {
   revokeToken: (clientId: string) => api.delete(`/clients/${clientId}/form-token`),
   listSubmissions: (clientId: string) =>
     api.get<ContractSubmission[]>(`/clients/${clientId}/contract-submissions`),
+  deleteSubmission: (clientId: string, submissionId: string) =>
+    api.delete(`/clients/${clientId}/contract-submissions/${submissionId}`),
 };

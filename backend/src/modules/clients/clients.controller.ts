@@ -118,3 +118,12 @@ export async function listContractSubmissions(req: Request, res: Response, next:
     next(err);
   }
 }
+
+export async function deleteContractSubmission(req: Request, res: Response, next: NextFunction) {
+  try {
+    await clientsService.deleteContractSubmission(req.params.id, req.params.submissionId);
+    res.json({ message: 'Resposta removida' });
+  } catch (err) {
+    next(err);
+  }
+}

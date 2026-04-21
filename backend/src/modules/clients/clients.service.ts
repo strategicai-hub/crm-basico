@@ -139,3 +139,14 @@ export async function listContractSubmissions(id: string) {
     orderBy: { submittedAt: 'desc' },
   });
 }
+
+export async function deleteContractSubmission(clientId: string, submissionId: string) {
+  const submission = await prisma.contractSubmission.findUnique({
+    where: { id: submissionId },
+    select: { id: true, clientId: true },
+  });
+  if (!submission || submission.clientId !== clientId) {
+    throw { status: 404, message: 'Resposta não encontrada' };
+  }
+  await prisma.contractSubmission.delete({ where: { id: submissionId } });
+}

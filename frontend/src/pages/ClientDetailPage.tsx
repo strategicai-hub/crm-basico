@@ -177,6 +177,17 @@ export function ClientDetailPage() {
     setTimeout(() => setOnboardingCopied(false), 2000);
   };
 
+  const handleDeleteContractSubmission = async (submissionId: string) => {
+    if (!id) return;
+    if (!confirm('Excluir esta resposta do formulário de contrato?')) return;
+    try {
+      await contractFormsApi.deleteSubmission(id, submissionId);
+      setSubmissions((prev) => prev.filter((s) => s.id !== submissionId));
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Falha ao excluir resposta.');
+    }
+  };
+
   const handleDeleteSubmission = async (submissionId: string) => {
     if (!id) return;
     if (!confirm('Excluir esta resposta? Os arquivos enviados serão removidos do Drive também.')) return;
@@ -496,17 +507,27 @@ export function ClientDetailPage() {
                       <span className="text-gray-400 text-sm">{isOpen ? '−' : '+'}</span>
                     </button>
                     {isOpen && (
-                      <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm border-t border-gray-100 pt-3">
-                        <Field label="Razão Social" value={s.legalName} />
-                        <Field label="CNPJ" value={s.cnpj} />
-                        <Field label="Endereço" value={s.address} />
-                        <Field label="Cidade e Estado" value={s.cityState} />
-                        <Field label="CEP" value={s.cep} />
-                        <Field label="Nome do signatário" value={s.signerName} />
-                        <Field label="CPF" value={s.signerCpf} />
-                        <Field label="Email do signatário" value={s.signerEmail} />
-                        <Field label="Contato para fatura" value={s.billingContact} />
-                      </div>
+                      <>
+                        <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm border-t border-gray-100 pt-3">
+                          <Field label="Razão Social" value={s.legalName} />
+                          <Field label="CNPJ" value={s.cnpj} />
+                          <Field label="Endereço" value={s.address} />
+                          <Field label="Cidade e Estado" value={s.cityState} />
+                          <Field label="CEP" value={s.cep} />
+                          <Field label="Nome do signatário" value={s.signerName} />
+                          <Field label="CPF" value={s.signerCpf} />
+                          <Field label="Email do signatário" value={s.signerEmail} />
+                          <Field label="Contato para fatura" value={s.billingContact} />
+                        </div>
+                        <div className="px-4 pb-3 flex justify-end">
+                          <button
+                            onClick={() => handleDeleteContractSubmission(s.id)}
+                            className="text-xs text-red-600 hover:underline"
+                          >
+                            Excluir resposta
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 );

@@ -21,6 +21,7 @@ router.post('/:id/activities', clientsController.addActivity);
 router.post('/:id/form-token', requireRole('ADMIN'), clientsController.generateFormToken);
 router.delete('/:id/form-token', requireRole('ADMIN'), clientsController.revokeFormToken);
 router.get('/:id/contract-submissions', requireRole('ADMIN'), clientsController.listContractSubmissions);
+router.delete('/:id/contract-submissions/:submissionId', requireRole('ADMIN'), clientsController.deleteContractSubmission);
 
 router.get('/:id/onboarding-form', onboardingController.get);
 router.post('/:id/onboarding-form', onboardingController.createOrUpdate);
