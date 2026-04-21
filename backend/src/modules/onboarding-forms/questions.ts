@@ -58,16 +58,15 @@ export const QUESTIONS: Question[] = [
     help: 'Nome como aparece para os clientes.',
     type: 'text',
     required: true,
-    placeholder: 'Ex: AJE DE BOXE',
   },
   {
     id: 'business.type',
     section: 'business',
     label: 'Qual o tipo do negócio?',
-    help: 'Ex: academia de boxe, escola de idiomas, consórcio.',
+    help: 'Ex: academia de boxe, escola de idiomas, consórcio, etc.',
     type: 'text',
     required: true,
-    placeholder: 'Ex: academia de boxe',
+    niches: ['GENERICO'],
   },
   {
     id: 'business.address',

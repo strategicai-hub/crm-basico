@@ -17,6 +17,23 @@ export function OnboardingFormPage() {
   const [uploads, setUploads] = useState<UploadEntry[]>([]);
   const [current, setCurrent] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardOffset(offset);
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -153,7 +170,7 @@ export function OnboardingFormPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-8 md:py-12">
+      <div className="flex-1 px-4 py-8 md:py-12 pb-28">
         <div className="max-w-lg mx-auto">
           <p className="text-xs uppercase tracking-wider text-gray-400 text-center mb-1">
             {ctx.clientName}
@@ -179,7 +196,10 @@ export function OnboardingFormPage() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 bg-white border-t border-gray-200">
+      <div
+        className="fixed left-0 right-0 bottom-0 bg-white border-t border-gray-200 transition-transform"
+        style={{ transform: `translateY(-${keyboardOffset}px)` }}
+      >
         <div className="max-w-lg mx-auto px-4 py-3 flex gap-3">
           <button
             onClick={goBack}
