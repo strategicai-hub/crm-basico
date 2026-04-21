@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   onboardingFormsApi,
+  OnboardingNiche,
   PublicFormContext,
   Question,
   UploadEntry,
@@ -56,6 +57,8 @@ export function OnboardingFormPage() {
         else setStatus('error');
       });
   }, [token]);
+
+  const currentNiche = (answers['business.niche'] as OnboardingNiche | undefined) ?? ctx?.niche;
 
   const visibleQuestions = useMemo(() => {
     if (!ctx) return [];
@@ -165,7 +168,7 @@ export function OnboardingFormPage() {
 
   const effectiveQuestion: Question = {
     ...question,
-    label: question.labelByNiche?.[ctx.niche] ?? question.label,
+    label: (currentNiche && question.labelByNiche?.[currentNiche]) ?? question.label,
   };
   const sectionTitle = getSectionTitleAt(ctx.questions, question, current === 0 ? null : visibleQuestions[current - 1]);
 
@@ -203,9 +206,9 @@ export function OnboardingFormPage() {
               onUpload={(files) => handleUpload(question.id, files)}
               onRemoveUpload={removeUpload}
             />
-            {(question.helpByNiche?.[ctx.niche] ?? question.help) && (
+            {((currentNiche && question.helpByNiche?.[currentNiche]) ?? question.help) && (
               <p className="mt-3 text-xs text-gray-500">
-                {question.helpByNiche?.[ctx.niche] ?? question.help}
+                {(currentNiche && question.helpByNiche?.[currentNiche]) ?? question.help}
               </p>
             )}
           </div>
@@ -660,6 +663,11 @@ function ListSubfield({
 }
 
 function shouldShow(q: Question, answers: Record<string, unknown>): boolean {
+  if (q.niches && q.niches.length > 0) {
+    const selectedNiche = answers['business.niche'];
+    if (typeof selectedNiche !== 'string') return false;
+    if (!q.niches.includes(selectedNiche as OnboardingNiche)) return false;
+  }
   if (!q.dependsOn) return true;
   const { questionId, equals, in: inList, notEquals } = q.dependsOn;
   const v = answers[questionId];

@@ -5,8 +5,6 @@ import { contractFormsApi, ContractSubmission } from '../api/contractForms.api';
 import {
   onboardingFormsApi,
   OnboardingFormSummary,
-  OnboardingNiche,
-  OnboardingTargetPlan,
 } from '../api/onboardingForms.api';
 import { useAuthStore } from '../store/authStore';
 
@@ -41,18 +39,6 @@ const typeLabels: Record<string, string> = {
   ONBOARDING_FORM_SUBMITTED: 'Formulário de onboarding',
 };
 
-const NICHE_LABELS: Record<OnboardingNiche, string> = {
-  ACADEMIA: 'Academia / estúdio fitness',
-  ESCOLA_CURSOS: 'Escola / cursos',
-  CONSORCIO: 'Consórcio',
-  GENERICO: 'Genérico (outros)',
-};
-
-const PLAN_LABELS: Record<OnboardingTargetPlan, string> = {
-  START: 'plano-start',
-  PLENO: 'plano-pleno',
-};
-
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -77,8 +63,6 @@ export function ClientDetailPage() {
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
 
   const [onboardingForm, setOnboardingForm] = useState<OnboardingFormSummary | null>(null);
-  const [onboardingNiche, setOnboardingNiche] = useState<OnboardingNiche>('ACADEMIA');
-  const [onboardingPlan, setOnboardingPlan] = useState<OnboardingTargetPlan>('PLENO');
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [onboardingCopied, setOnboardingCopied] = useState(false);
 
@@ -97,10 +81,6 @@ export function ClientDetailPage() {
     if (!id) return;
     onboardingFormsApi.get(id).then(({ data }) => {
       setOnboardingForm(data);
-      if (data) {
-        setOnboardingNiche(data.niche);
-        setOnboardingPlan(data.targetPlan);
-      }
     });
   }, [id]);
 
@@ -146,10 +126,7 @@ export function ClientDetailPage() {
     if (!id) return;
     setOnboardingLoading(true);
     try {
-      const { data } = await onboardingFormsApi.createOrUpdate(id, {
-        niche: onboardingNiche,
-        targetPlan: onboardingPlan,
-      });
+      const { data } = await onboardingFormsApi.createOrUpdate(id, {});
       setOnboardingForm(data);
     } catch (err: any) {
       alert(err.response?.data?.error || 'Falha ao gerar link de onboarding.');
@@ -365,33 +342,6 @@ export function ClientDetailPage() {
           Link único para o cliente preencher os dados do negócio que alimentam o <code>client.yaml</code> do plano-start/plano-pleno.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Nicho</label>
-            <select
-              value={onboardingNiche}
-              onChange={(e) => setOnboardingNiche(e.target.value as OnboardingNiche)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            >
-              {Object.entries(NICHE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Plano alvo</label>
-            <select
-              value={onboardingPlan}
-              onChange={(e) => setOnboardingPlan(e.target.value as OnboardingTargetPlan)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            >
-              {Object.entries(PLAN_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
         {onboardingForm && onboardingForm.token ? (
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row gap-2">
@@ -406,14 +356,6 @@ export function ClientDetailPage() {
                   className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                 >
                   {onboardingCopied ? 'Copiado!' : 'Copiar'}
-                </button>
-                <button
-                  onClick={handleGenerateOnboarding}
-                  disabled={onboardingLoading}
-                  className="flex-1 sm:flex-none px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm disabled:opacity-50"
-                  title="Atualiza nicho/plano do link existente"
-                >
-                  Atualizar
                 </button>
                 <button
                   onClick={handleRevokeOnboarding}

@@ -1,11 +1,20 @@
 import crypto from 'crypto';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, OnboardingNiche } from '@prisma/client';
 import { CreateOnboardingFormInput } from './onboarding-forms.schema';
-import { filterQuestionsForForm } from './questions';
+import { QUESTIONS } from './questions';
 import { generateYaml, UploadEntry } from './yaml-generator';
 import { createClientFolder, deleteFile, isDriveConfigured } from '../../services/google-drive.service';
 
 const prisma = new PrismaClient();
+
+const VALID_NICHES: OnboardingNiche[] = ['ACADEMIA', 'ESCOLA_CURSOS', 'CONSORCIO', 'GENERICO'];
+
+function extractNicheFromAnswers(answers: Record<string, unknown>): OnboardingNiche | null {
+  const value = answers['business.niche'];
+  return typeof value === 'string' && (VALID_NICHES as string[]).includes(value)
+    ? (value as OnboardingNiche)
+    : null;
+}
 
 function buildFormUrl(token: string) {
   const base = process.env.PUBLIC_APP_URL || '';
@@ -59,21 +68,24 @@ export async function createOrUpdateOnboardingForm(
     }
   }
 
+  const niche = input.niche ?? existing?.niche ?? 'GENERICO';
+  const targetPlan = input.targetPlan ?? existing?.targetPlan ?? 'PLENO';
+
   await prisma.onboardingForm.upsert({
     where: { clientId },
     create: {
       clientId,
       token,
-      niche: input.niche,
-      targetPlan: input.targetPlan,
+      niche,
+      targetPlan,
       driveFolderId,
       driveFolderUrl,
       createdById: userId,
     },
     update: {
       token,
-      niche: input.niche,
-      targetPlan: input.targetPlan,
+      niche,
+      targetPlan,
       ...(driveFolderId ? { driveFolderId, driveFolderUrl } : {}),
     },
   });
@@ -140,9 +152,10 @@ export async function generateYamlForLatest(clientId: string): Promise<{ yaml: s
 
   const answers = (submission.answers as Record<string, unknown>) ?? {};
   const uploads = ((submission.uploads as unknown) as UploadEntry[]) ?? [];
+  const niche = extractNicheFromAnswers(answers) ?? form.niche;
 
   const yaml = generateYaml({
-    niche: form.niche,
+    niche,
     targetPlan: form.targetPlan,
     answers,
     uploads,
@@ -155,7 +168,7 @@ export async function generateYamlForLatest(clientId: string): Promise<{ yaml: s
 export async function getFormQuestions(clientId: string) {
   const form = await prisma.onboardingForm.findUnique({ where: { clientId } });
   if (!form) throw { status: 404, message: 'Formulário não encontrado' };
-  return filterQuestionsForForm(form.niche, form.targetPlan);
+  return QUESTIONS;
 }
 
 export async function getPublicFormContext(token: string) {
@@ -169,7 +182,7 @@ export async function getPublicFormContext(token: string) {
     clientName: form.client.name,
     niche: form.niche,
     targetPlan: form.targetPlan,
-    questions: filterQuestionsForForm(form.niche, form.targetPlan),
+    questions: QUESTIONS,
     hasDrive: Boolean(form.driveFolderId),
   };
 }
@@ -188,6 +201,8 @@ export async function recordSubmission(
   data: { answers: Record<string, unknown>; uploads: UploadEntry[] }
 ) {
   const form = await getFormByToken(token);
+  const answeredNiche = extractNicheFromAnswers(data.answers);
+  const effectiveNiche = answeredNiche ?? form.niche;
 
   return prisma.$transaction(async (tx) => {
     const submission = await tx.onboardingSubmission.create({
@@ -198,10 +213,17 @@ export async function recordSubmission(
       },
     });
 
+    if (answeredNiche && answeredNiche !== form.niche) {
+      await tx.onboardingForm.update({
+        where: { id: form.id },
+        data: { niche: answeredNiche },
+      });
+    }
+
     await tx.activity.create({
       data: {
         type: 'ONBOARDING_FORM_SUBMITTED',
-        content: `Formulário de onboarding preenchido (${form.niche}/${form.targetPlan})`,
+        content: `Formulário de onboarding preenchido (${effectiveNiche}/${form.targetPlan})`,
         clientId: form.clientId,
         userId: form.client.ownerId,
       },

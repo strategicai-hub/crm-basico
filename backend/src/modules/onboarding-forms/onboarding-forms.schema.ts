@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const createOnboardingFormSchema = z.object({
-  niche: z.enum(['ACADEMIA', 'ESCOLA_CURSOS', 'CONSORCIO', 'GENERICO']),
-  targetPlan: z.enum(['START', 'PLENO']),
+  niche: z.enum(['ACADEMIA', 'ESCOLA_CURSOS', 'CONSORCIO', 'GENERICO']).optional(),
+  targetPlan: z.enum(['START', 'PLENO']).optional(),
 });
 
 export type CreateOnboardingFormInput = z.infer<typeof createOnboardingFormSchema>;

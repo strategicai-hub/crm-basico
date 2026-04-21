@@ -52,9 +52,22 @@ const ACADEMIA_AND_ESCOLA: OnboardingNiche[] = ['ACADEMIA', 'ESCOLA_CURSOS'];
 export const QUESTIONS: Question[] = [
   // ---------- BUSINESS ----------
   {
-    id: 'business.name',
+    id: 'business.niche',
     section: 'business',
     sectionTitle: 'Dados do negócio',
+    label: 'Qual a área do seu negócio?',
+    type: 'select',
+    required: true,
+    options: [
+      { value: 'ACADEMIA', label: 'Academia / estúdio fitness' },
+      { value: 'ESCOLA_CURSOS', label: 'Escola / cursos' },
+      { value: 'CONSORCIO', label: 'Consórcio' },
+      { value: 'GENERICO', label: 'Outro' },
+    ],
+  },
+  {
+    id: 'business.name',
+    section: 'business',
     label: 'Qual o nome do seu negócio?',
     help: 'Nome como aparece para os clientes.',
     type: 'text',
@@ -425,11 +438,10 @@ export const QUESTIONS: Question[] = [
 ];
 
 export function filterQuestionsForForm(
-  niche: OnboardingNiche,
+  _niche: OnboardingNiche,
   targetPlan: OnboardingTargetPlan
 ): Question[] {
   return QUESTIONS.filter((q) => {
-    if (q.niches && !q.niches.includes(niche)) return false;
     if (q.targetPlans && !q.targetPlans.includes(targetPlan)) return false;
     return true;
   });
