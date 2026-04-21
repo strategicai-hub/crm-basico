@@ -54,6 +54,11 @@ export async function createClientFolder(clientName: string, clientId: string) {
   return { folderId, folderUrl };
 }
 
+export async function deleteFile(fileId: string) {
+  const drive = getDrive();
+  await drive.files.delete({ fileId, supportsAllDrives: true });
+}
+
 export async function uploadFileToFolder(params: {
   folderId: string;
   filename: string;

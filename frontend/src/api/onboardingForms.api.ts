@@ -108,6 +108,8 @@ export const onboardingFormsApi = {
   revoke: (clientId: string) => api.delete(`/clients/${clientId}/onboarding-form/token`),
   listSubmissions: (clientId: string) =>
     api.get<OnboardingSubmissionRecord[]>(`/clients/${clientId}/onboarding-form/submissions`),
+  deleteSubmission: (clientId: string, submissionId: string) =>
+    api.delete(`/clients/${clientId}/onboarding-form/submissions/${submissionId}`),
   downloadYaml: (clientId: string) =>
     api.get(`/clients/${clientId}/onboarding-form/yaml`, { responseType: 'blob' }),
 };

@@ -177,6 +177,19 @@ export function ClientDetailPage() {
     setTimeout(() => setOnboardingCopied(false), 2000);
   };
 
+  const handleDeleteSubmission = async (submissionId: string) => {
+    if (!id) return;
+    if (!confirm('Excluir esta resposta? Os arquivos enviados serão removidos do Drive também.')) return;
+    try {
+      await onboardingFormsApi.deleteSubmission(id, submissionId);
+      setOnboardingForm((prev) =>
+        prev ? { ...prev, submissions: prev.submissions.filter((s) => s.id !== submissionId) } : prev
+      );
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Falha ao excluir resposta.');
+    }
+  };
+
   const handleDownloadYaml = async () => {
     if (!id || !client) return;
     try {
@@ -440,6 +453,12 @@ export function ClientDetailPage() {
                   <span className="text-sm text-gray-700">
                     Enviado em {new Date(s.submittedAt).toLocaleString('pt-BR')}
                   </span>
+                  <button
+                    onClick={() => handleDeleteSubmission(s.id)}
+                    className="text-xs text-red-600 hover:underline self-start sm:self-auto"
+                  >
+                    Excluir
+                  </button>
                 </div>
               ))}
             </div>

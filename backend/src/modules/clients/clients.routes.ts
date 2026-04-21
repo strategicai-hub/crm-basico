@@ -26,6 +26,7 @@ router.get('/:id/onboarding-form', onboardingController.get);
 router.post('/:id/onboarding-form', onboardingController.createOrUpdate);
 router.delete('/:id/onboarding-form/token', onboardingController.revoke);
 router.get('/:id/onboarding-form/submissions', onboardingController.listSubmissions);
+router.delete('/:id/onboarding-form/submissions/:submissionId', onboardingController.deleteSubmission);
 router.get('/:id/onboarding-form/yaml', onboardingController.downloadYaml);
 
 export default router;

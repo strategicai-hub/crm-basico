@@ -3,7 +3,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { CreateOnboardingFormInput } from './onboarding-forms.schema';
 import { filterQuestionsForForm } from './questions';
 import { generateYaml, UploadEntry } from './yaml-generator';
-import { createClientFolder, isDriveConfigured } from '../../services/google-drive.service';
+import { createClientFolder, deleteFile, isDriveConfigured } from '../../services/google-drive.service';
 
 const prisma = new PrismaClient();
 
@@ -89,6 +89,29 @@ export async function revokeToken(clientId: string) {
     where: { clientId },
     data: { token: null },
   });
+}
+
+export async function deleteSubmission(clientId: string, submissionId: string) {
+  const submission = await prisma.onboardingSubmission.findUnique({
+    where: { id: submissionId },
+    include: { form: { select: { clientId: true } } },
+  });
+  if (!submission || submission.form.clientId !== clientId) {
+    throw { status: 404, message: 'Resposta não encontrada' };
+  }
+
+  const uploads = ((submission.uploads as unknown) as UploadEntry[]) ?? [];
+  if (isDriveConfigured()) {
+    for (const upload of uploads) {
+      try {
+        await deleteFile(upload.driveFileId);
+      } catch (err) {
+        console.error('[onboarding] falha ao deletar arquivo do Drive:', err);
+      }
+    }
+  }
+
+  await prisma.onboardingSubmission.delete({ where: { id: submissionId } });
 }
 
 export async function listSubmissions(clientId: string) {

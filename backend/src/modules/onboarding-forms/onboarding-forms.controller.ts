@@ -39,6 +39,15 @@ export async function listSubmissions(req: Request, res: Response, next: NextFun
   }
 }
 
+export async function deleteSubmission(req: Request, res: Response, next: NextFunction) {
+  try {
+    await service.deleteSubmission(req.params.id, req.params.submissionId);
+    res.json({ message: 'Resposta removida' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function downloadYaml(req: Request, res: Response, next: NextFunction) {
   try {
     const { yaml, filename } = await service.generateYamlForLatest(req.params.id);
