@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { clientsApi } from '../api/clients.api';
 import { contractFormsApi, ContractSubmission } from '../api/contractForms.api';
+import {
+  onboardingFormsApi,
+  OnboardingFormSummary,
+  OnboardingNiche,
+  OnboardingTargetPlan,
+} from '../api/onboardingForms.api';
 import { useAuthStore } from '../store/authStore';
 
 interface ClientDetail {
@@ -32,6 +38,19 @@ const typeLabels: Record<string, string> = {
   MEETING: 'Reunião',
   STAGE_CHANGE: 'Mudança de Etapa',
   CONTRACT_FORM_SUBMITTED: 'Formulário de contrato',
+  ONBOARDING_FORM_SUBMITTED: 'Formulário de onboarding',
+};
+
+const NICHE_LABELS: Record<OnboardingNiche, string> = {
+  ACADEMIA: 'Academia / estúdio fitness',
+  ESCOLA_CURSOS: 'Escola / cursos',
+  CONSORCIO: 'Consórcio',
+  GENERICO: 'Genérico (outros)',
+};
+
+const PLAN_LABELS: Record<OnboardingTargetPlan, string> = {
+  START: 'plano-start',
+  PLENO: 'plano-pleno',
 };
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -57,6 +76,12 @@ export function ClientDetailPage() {
   const [copied, setCopied] = useState(false);
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
 
+  const [onboardingForm, setOnboardingForm] = useState<OnboardingFormSummary | null>(null);
+  const [onboardingNiche, setOnboardingNiche] = useState<OnboardingNiche>('ACADEMIA');
+  const [onboardingPlan, setOnboardingPlan] = useState<OnboardingTargetPlan>('PLENO');
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
+  const [onboardingCopied, setOnboardingCopied] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     clientsApi.get(id).then(({ data }) => setClient(data));
@@ -67,6 +92,17 @@ export function ClientDetailPage() {
     if (!id || !isAdmin) return;
     contractFormsApi.listSubmissions(id).then(({ data }) => setSubmissions(data));
   }, [id, isAdmin]);
+
+  useEffect(() => {
+    if (!id) return;
+    onboardingFormsApi.get(id).then(({ data }) => {
+      setOnboardingForm(data);
+      if (data) {
+        setOnboardingNiche(data.niche);
+        setOnboardingPlan(data.targetPlan);
+      }
+    });
+  }, [id]);
 
   const formUrl = client?.formToken
     ? `${window.location.origin}/formulario-contrato/${client.formToken}`
@@ -100,6 +136,64 @@ export function ClientDetailPage() {
     await navigator.clipboard.writeText(formUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const onboardingUrl = onboardingForm?.token
+    ? `${window.location.origin}/formulario-negocio/${onboardingForm.token}`
+    : null;
+
+  const handleGenerateOnboarding = async () => {
+    if (!id) return;
+    setOnboardingLoading(true);
+    try {
+      const { data } = await onboardingFormsApi.createOrUpdate(id, {
+        niche: onboardingNiche,
+        targetPlan: onboardingPlan,
+      });
+      setOnboardingForm(data);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Falha ao gerar link de onboarding.');
+    } finally {
+      setOnboardingLoading(false);
+    }
+  };
+
+  const handleRevokeOnboarding = async () => {
+    if (!id) return;
+    if (!confirm('Revogar o link? Ele deixará de funcionar imediatamente.')) return;
+    setOnboardingLoading(true);
+    try {
+      await onboardingFormsApi.revoke(id);
+      setOnboardingForm((prev) => (prev ? { ...prev, token: null, url: null } : prev));
+    } finally {
+      setOnboardingLoading(false);
+    }
+  };
+
+  const handleCopyOnboarding = async () => {
+    if (!onboardingUrl) return;
+    await navigator.clipboard.writeText(onboardingUrl);
+    setOnboardingCopied(true);
+    setTimeout(() => setOnboardingCopied(false), 2000);
+  };
+
+  const handleDownloadYaml = async () => {
+    if (!id || !client) return;
+    try {
+      const { data } = await onboardingFormsApi.downloadYaml(id);
+      const blob = new Blob([data as BlobPart], { type: 'application/x-yaml' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const safeName = client.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      link.download = `client-${safeName || 'cliente'}.yaml`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Falha ao baixar YAML.');
+    }
   };
 
   const addActivity = async (e: React.FormEvent) => {
@@ -240,6 +334,124 @@ export function ClientDetailPage() {
           )}
         </div>
       )}
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-semibold mb-4">Formulário de onboarding do negócio</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Link único para o cliente preencher os dados do negócio que alimentam o <code>client.yaml</code> do plano-start/plano-pleno.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Nicho</label>
+            <select
+              value={onboardingNiche}
+              onChange={(e) => setOnboardingNiche(e.target.value as OnboardingNiche)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              {Object.entries(NICHE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Plano alvo</label>
+            <select
+              value={onboardingPlan}
+              onChange={(e) => setOnboardingPlan(e.target.value as OnboardingTargetPlan)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              {Object.entries(PLAN_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {onboardingForm && onboardingForm.token ? (
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                readOnly
+                value={onboardingUrl || ''}
+                className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopyOnboarding}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                >
+                  {onboardingCopied ? 'Copiado!' : 'Copiar'}
+                </button>
+                <button
+                  onClick={handleGenerateOnboarding}
+                  disabled={onboardingLoading}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-sm disabled:opacity-50"
+                  title="Atualiza nicho/plano do link existente"
+                >
+                  Atualizar
+                </button>
+                <button
+                  onClick={handleRevokeOnboarding}
+                  disabled={onboardingLoading}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm disabled:opacity-50"
+                >
+                  Revogar
+                </button>
+              </div>
+            </div>
+            {onboardingForm.driveFolderUrl && (
+              <a
+                href={onboardingForm.driveFolderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-sm text-[#0f4c4c] underline"
+              >
+                Abrir pasta do cliente no Google Drive →
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-gray-600">
+              {onboardingForm
+                ? 'Link revogado. Gere um novo para reativar.'
+                : 'Nenhum link gerado ainda.'}
+            </p>
+            <button
+              onClick={handleGenerateOnboarding}
+              disabled={onboardingLoading}
+              className="px-4 py-2 bg-[#0f4c4c] text-white rounded-lg hover:opacity-90 text-sm disabled:opacity-50"
+            >
+              {onboardingLoading ? 'Gerando...' : 'Gerar link'}
+            </button>
+          </div>
+        )}
+
+        {onboardingForm && onboardingForm.submissions.length > 0 && (
+          <div className="mt-6 border-t border-gray-100 pt-4">
+            <p className="text-xs font-medium text-gray-500 mb-2">Respostas recebidas</p>
+            <div className="space-y-2">
+              {onboardingForm.submissions.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2"
+                >
+                  <span className="text-sm text-gray-700">
+                    Enviado em {new Date(s.submittedAt).toLocaleString('pt-BR')}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={handleDownloadYaml}
+              className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-[#0f4c4c] text-white rounded-lg text-sm hover:opacity-90"
+            >
+              Baixar client.yaml da última resposta
+            </button>
+          </div>
+        )}
+      </div>
 
       {isAdmin && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">

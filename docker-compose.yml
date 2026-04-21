@@ -29,8 +29,13 @@ services:
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:?ACCESS_TOKEN_SECRET is required}
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:?REFRESH_TOKEN_SECRET is required}
       INTEGRATION_API_KEY: ${INTEGRATION_API_KEY}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://crm-basico.strategicai.com.br}
+      GOOGLE_DRIVE_SA_JSON: /run/secrets/gdrive_sa
+      GOOGLE_DRIVE_ROOT_FOLDER_ID: ${GOOGLE_DRIVE_ROOT_FOLDER_ID}
       PORT: 3000
       NODE_ENV: production
+    secrets:
+      - gdrive_sa
     networks:
       - internal
     deploy:
@@ -65,3 +70,7 @@ networks:
 
 volumes:
   pgdata:
+
+secrets:
+  gdrive_sa:
+    external: true

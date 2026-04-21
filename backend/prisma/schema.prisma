@@ -25,6 +25,18 @@ enum TaskStatus {
   CANCELADA
 }
 
+enum OnboardingNiche {
+  ACADEMIA
+  ESCOLA_CURSOS
+  CONSORCIO
+  GENERICO
+}
+
+enum OnboardingTargetPlan {
+  START
+  PLENO
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -35,11 +47,12 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  clients       Client[]
-  deals         Deal[]
-  tasks         Task[]
-  activities    Activity[]
-  refreshTokens RefreshToken[]
+  clients          Client[]
+  deals            Deal[]
+  tasks            Task[]
+  activities       Activity[]
+  refreshTokens    RefreshToken[]
+  onboardingForms  OnboardingForm[]
 
   @@map("users")
 }
@@ -82,6 +95,7 @@ model Client {
   tasks               Task[]
   activities          Activity[]
   contractSubmissions ContractSubmission[]
+  onboardingForm      OnboardingForm?
 
   @@index([ownerId])
   @@index([name])
@@ -194,4 +208,36 @@ model Activity {
   @@index([clientId])
   @@index([dealId])
   @@map("activities")
+}
+
+model OnboardingForm {
+  id             String               @id @default(uuid())
+  clientId       String               @unique @map("client_id")
+  token          String?              @unique
+  niche          OnboardingNiche
+  targetPlan     OnboardingTargetPlan @map("target_plan")
+  driveFolderId  String?              @map("drive_folder_id")
+  driveFolderUrl String?              @map("drive_folder_url")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  createdById    String               @map("created_by_id")
+
+  client      Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy   User                   @relation(fields: [createdById], references: [id])
+  submissions OnboardingSubmission[]
+
+  @@map("onboarding_forms")
+}
+
+model OnboardingSubmission {
+  id          String   @id @default(uuid())
+  formId      String   @map("form_id")
+  answers     Json
+  uploads     Json
+  submittedAt DateTime @default(now()) @map("submitted_at")
+
+  form OnboardingForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@map("onboarding_submissions")
 }

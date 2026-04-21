@@ -10,6 +10,7 @@ import { TasksPage } from '../pages/TasksPage';
 import { UsersPage } from '../pages/UsersPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { ContractFormPage } from '../pages/ContractFormPage';
+import { OnboardingFormPage } from '../pages/OnboardingFormPage';
 
 export const router = createBrowserRouter([
   {
@@ -19,6 +20,10 @@ export const router = createBrowserRouter([
   {
     path: '/formulario-contrato/:token',
     element: <ContractFormPage />,
+  },
+  {
+    path: '/formulario-negocio/:token',
+    element: <OnboardingFormPage />,
   },
   {
     element: (

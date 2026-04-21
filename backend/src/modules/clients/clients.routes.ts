@@ -3,6 +3,7 @@ import { authenticate } from '../../middleware/auth';
 import { ownershipFilter } from '../../middleware/ownership';
 import { requireRole } from '../../middleware/role';
 import * as clientsController from './clients.controller';
+import * as onboardingController from '../onboarding-forms/onboarding-forms.controller';
 
 const router = Router();
 
@@ -20,5 +21,11 @@ router.post('/:id/activities', clientsController.addActivity);
 router.post('/:id/form-token', requireRole('ADMIN'), clientsController.generateFormToken);
 router.delete('/:id/form-token', requireRole('ADMIN'), clientsController.revokeFormToken);
 router.get('/:id/contract-submissions', requireRole('ADMIN'), clientsController.listContractSubmissions);
+
+router.get('/:id/onboarding-form', onboardingController.get);
+router.post('/:id/onboarding-form', onboardingController.createOrUpdate);
+router.delete('/:id/onboarding-form/token', onboardingController.revoke);
+router.get('/:id/onboarding-form/submissions', onboardingController.listSubmissions);
+router.get('/:id/onboarding-form/yaml', onboardingController.downloadYaml);
 
 export default router;

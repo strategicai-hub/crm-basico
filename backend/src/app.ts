@@ -12,6 +12,7 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import integrationsRoutes from './modules/integrations/integrations.routes';
 import originsRoutes from './modules/origins/origins.routes';
 import contractFormsRoutes from './modules/contract-forms/contract-forms.routes';
+import publicOnboardingRoutes from './modules/public-onboarding/public-onboarding.routes';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/origins', originsRoutes);
 app.use('/api/public/contract-form', contractFormsRoutes);
+app.use('/api/public/onboarding', publicOnboardingRoutes);
 
 app.use(errorHandler);
 
