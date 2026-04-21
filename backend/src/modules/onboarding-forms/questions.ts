@@ -29,6 +29,7 @@ export interface Question {
   section: string;
   sectionTitle?: string;
   label: string;
+  labelByNiche?: Partial<Record<OnboardingNiche, string>>;
   help?: string;
   helpByNiche?: Partial<Record<OnboardingNiche, string>>;
   type: QuestionType;
@@ -47,7 +48,6 @@ export interface Question {
 }
 
 const ACADEMIA_AND_ESCOLA: OnboardingNiche[] = ['ACADEMIA', 'ESCOLA_CURSOS'];
-const PLENO_ONLY: OnboardingTargetPlan[] = ['PLENO'];
 
 export const QUESTIONS: Question[] = [
   // ---------- BUSINESS ----------
@@ -124,7 +124,7 @@ export const QUESTIONS: Question[] = [
     uploadHint: 'Pode enviar uma ou mais imagens da estrutura.',
   },
 
-  // ---------- AUDIENCE (ACADEMIA / ESCOLA) ----------
+  // ---------- AUDIENCE (ESCOLA_CURSOS) ----------
   {
     id: 'audience.min_age',
     section: 'audience',
@@ -133,7 +133,7 @@ export const QUESTIONS: Question[] = [
     type: 'number',
     min: 0,
     max: 120,
-    niches: ACADEMIA_AND_ESCOLA,
+    niches: ['ESCOLA_CURSOS'],
   },
   {
     id: 'audience.max_age_note',
@@ -141,7 +141,7 @@ export const QUESTIONS: Question[] = [
     label: 'Há limite de idade máxima? (opcional)',
     type: 'text',
     placeholder: 'Ex: sem limite superior (até 60+)',
-    niches: ACADEMIA_AND_ESCOLA,
+    niches: ['ESCOLA_CURSOS'],
   },
   {
     id: 'audience.levels',
@@ -149,19 +149,23 @@ export const QUESTIONS: Question[] = [
     label: 'Quais níveis você atende? (opcional)',
     type: 'text',
     placeholder: 'Ex: iniciante, intermediário e avançado',
-    niches: ACADEMIA_AND_ESCOLA,
+    niches: ['ESCOLA_CURSOS'],
   },
   {
     id: 'audience.modalities',
     section: 'audience',
-    label: 'Quais modalidades/cursos oferece?',
+    label: 'Quais modalidades oferece?',
+    labelByNiche: {
+      ACADEMIA: 'Quais modalidades oferece?',
+      ESCOLA_CURSOS: 'Quais modalidades/cursos oferece?',
+    },
     help: 'Um por linha.',
     type: 'list',
     niches: ACADEMIA_AND_ESCOLA,
     required: true,
   },
 
-  // ---------- SCHEDULE (ACADEMIA / ESCOLA) ----------
+  // ---------- SCHEDULE (ESCOLA_CURSOS only tem duração) ----------
   {
     id: 'schedule.class_duration',
     section: 'schedule',
@@ -169,7 +173,7 @@ export const QUESTIONS: Question[] = [
     label: 'Qual a duração de cada aula?',
     type: 'text',
     placeholder: 'Ex: 1 hora',
-    niches: ACADEMIA_AND_ESCOLA,
+    niches: ['ESCOLA_CURSOS'],
     required: true,
   },
   {
@@ -181,45 +185,10 @@ export const QUESTIONS: Question[] = [
     niches: ACADEMIA_AND_ESCOLA,
   },
   {
-    id: 'schedule.weekdays.morning',
-    section: 'schedule',
-    label: 'Horários de segunda a sexta — MANHÃ',
-    help: 'Liste os horários separados por vírgula. Ex: 5h, 6h, 7h',
-    type: 'list',
-    niches: ACADEMIA_AND_ESCOLA,
-  },
-  {
-    id: 'schedule.weekdays.afternoon',
-    section: 'schedule',
-    label: 'Horários de segunda a sexta — TARDE',
-    type: 'list',
-    niches: ACADEMIA_AND_ESCOLA,
-  },
-  {
-    id: 'schedule.weekdays.evening',
-    section: 'schedule',
-    label: 'Horários de segunda a sexta — NOITE',
-    type: 'list',
-    niches: ACADEMIA_AND_ESCOLA,
-  },
-  {
-    id: 'schedule.saturday',
-    section: 'schedule',
-    label: 'Horários de sábado (opcional)',
-    type: 'list',
-    niches: ACADEMIA_AND_ESCOLA,
-  },
-  {
-    id: 'schedule.sunday',
-    section: 'schedule',
-    label: 'Horários de domingo (opcional)',
-    type: 'list',
-    niches: ACADEMIA_AND_ESCOLA,
-  },
-  {
     id: 'schedule.image',
     section: 'schedule',
-    label: 'Envie uma imagem da tabela de horários (opcional)',
+    label: 'Envie uma imagem com a tabela de horários',
+    help: 'Anexe uma foto ou PDF com os horários das aulas (segunda a domingo).',
     type: 'upload',
     accept: 'image/*,application/pdf',
     niches: ACADEMIA_AND_ESCOLA,
@@ -344,44 +313,23 @@ export const QUESTIONS: Question[] = [
     ],
   },
 
-  // ---------- PLANS (all niches) ----------
-  {
-    id: 'plans',
-    section: 'plans',
-    sectionTitle: 'Planos e preços',
-    label: 'Cadastre os planos oferecidos',
-    help: 'Adicione um por vez.',
-    type: 'repeater',
-    fields: [
-      {
-        id: 'name',
-        section: 'plans',
-        label: 'Nome do plano',
-        type: 'text',
-        required: true,
-      },
-      {
-        id: 'price',
-        section: 'plans',
-        label: 'Preço',
-        type: 'text',
-        required: true,
-        placeholder: 'Ex: R$ 250,00 por mês',
-      },
-      {
-        id: 'description',
-        section: 'plans',
-        label: 'Descrição',
-        type: 'textarea',
-      },
-    ],
-  },
+  // ---------- PLANS (ACADEMIA / ESCOLA) ----------
   {
     id: 'plans.image',
     section: 'plans',
-    label: 'Envie uma imagem da tabela de preços (opcional)',
+    sectionTitle: 'Planos e preços',
+    label: 'Envie uma imagem com a tabela de planos',
+    labelByNiche: {
+      ACADEMIA: 'Envie uma imagem com a tabela de planos',
+      ESCOLA_CURSOS: 'Envie uma imagem da tabela de preços (opcional)',
+    },
+    helpByNiche: {
+      ACADEMIA:
+        'Anexe uma foto ou PDF com nome, preço e descrição dos planos. Se enviar a imagem, não precisa preencher em texto.',
+    },
     type: 'upload',
     accept: 'image/*,application/pdf',
+    niches: ACADEMIA_AND_ESCOLA,
   },
 
   // ---------- PAYMENT ----------
@@ -418,7 +366,7 @@ export const QUESTIONS: Question[] = [
     section: 'payment',
     label: 'Política de reposição (opcional)',
     type: 'textarea',
-    niches: ACADEMIA_AND_ESCOLA,
+    niches: ['ESCOLA_CURSOS'],
   },
 
   // ---------- BENEFIT PLATFORMS (ACADEMIA) ----------
@@ -426,8 +374,8 @@ export const QUESTIONS: Question[] = [
     id: 'benefit_platforms',
     section: 'benefit_platforms',
     sectionTitle: 'Plataformas de benefícios',
-    label: 'Aceita plataformas de benefícios? (opcional)',
-    help: 'Ex: GymPass/WellHub, TotalPass. Adicione cada uma.',
+    label: 'Aceita plataformas de benefícios (Gympass, Wellhub, ...)? (opcional)',
+    help: 'Adicione cada plataforma aceita.',
     type: 'repeater',
     niches: ['ACADEMIA'],
     fields: [
@@ -473,160 +421,6 @@ export const QUESTIONS: Question[] = [
         'Um por linha. Ex: atendimento personalizado, qualidade garantida, preço competitivo, entrega rápida, suporte pós-venda.',
     },
     type: 'list',
-  },
-
-  // ---------- APPOINTMENTS (PLENO) ----------
-  {
-    id: 'appointments.source',
-    section: 'appointments',
-    sectionTitle: 'Agendamento (plano Pleno)',
-    label: 'Onde os agendamentos são persistidos?',
-    type: 'select',
-    targetPlans: PLENO_ONLY,
-    options: [
-      { value: 'google_calendar', label: 'Google Calendar' },
-      { value: 'external_system', label: 'Sistema externo (CloudGym, etc)' },
-    ],
-    defaultValue: 'google_calendar',
-  },
-  {
-    id: 'appointments.google_calendar.calendar_id',
-    section: 'appointments',
-    label: 'ID do Google Calendar (compartilhado com a Service Account)',
-    type: 'text',
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'appointments.source', equals: 'google_calendar' },
-  },
-  {
-    id: 'appointments.external_system.type',
-    section: 'appointments',
-    label: 'Qual o driver do sistema externo?',
-    type: 'text',
-    placeholder: 'Ex: cloudgym',
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'appointments.source', equals: 'external_system' },
-  },
-  {
-    id: 'appointments.slot_duration_minutes',
-    section: 'appointments',
-    label: 'Duração padrão de um slot (minutos)',
-    type: 'number',
-    defaultValue: 60,
-    targetPlans: PLENO_ONLY,
-  },
-  {
-    id: 'appointments.lead_time_minutes',
-    section: 'appointments',
-    label: 'Antecedência mínima entre agendamento e aula (minutos)',
-    type: 'number',
-    defaultValue: 60,
-    targetPlans: PLENO_ONLY,
-  },
-  {
-    id: 'appointments.business_hours.mon_fri',
-    section: 'appointments',
-    label: 'Janela de funcionamento — segunda a sexta',
-    help: 'Formato HH:MM-HH:MM. Ex: 06:00-22:00',
-    type: 'text',
-    defaultValue: '06:00-22:00',
-    targetPlans: PLENO_ONLY,
-  },
-  {
-    id: 'appointments.business_hours.sat',
-    section: 'appointments',
-    label: 'Janela de funcionamento — sábado (vazio se não abre)',
-    type: 'text',
-    placeholder: 'Ex: 09:00-13:00',
-    targetPlans: PLENO_ONLY,
-  },
-  {
-    id: 'appointments.business_hours.sun',
-    section: 'appointments',
-    label: 'Janela de funcionamento — domingo (vazio se não abre)',
-    type: 'text',
-    targetPlans: PLENO_ONLY,
-  },
-
-  // ---------- FOLLOWUPS (PLENO) ----------
-  {
-    id: 'followups.reactivation.enabled',
-    section: 'followups',
-    sectionTitle: 'Follow-ups automáticos (plano Pleno)',
-    label: 'Ativar reativação automática de leads inativos?',
-    type: 'boolean',
-    defaultValue: true,
-    targetPlans: PLENO_ONLY,
-  },
-  {
-    id: 'followups.reactivation.inactive_hours',
-    section: 'followups',
-    label: 'Após quantas horas sem resposta a reativação dispara?',
-    type: 'number',
-    defaultValue: 24,
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'followups.reactivation.enabled', equals: true },
-  },
-  {
-    id: 'followups.reactivation.max_stages',
-    section: 'followups',
-    label: 'Quantas tentativas de reativação no máximo?',
-    type: 'number',
-    defaultValue: 3,
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'followups.reactivation.enabled', equals: true },
-  },
-  {
-    id: 'followups.appointment_reminder.enabled',
-    section: 'followups',
-    label: 'Enviar lembrete de agendamento?',
-    type: 'boolean',
-    defaultValue: true,
-    targetPlans: PLENO_ONLY,
-  },
-  {
-    id: 'followups.appointment_reminder.hours_before',
-    section: 'followups',
-    label: 'Quantas horas antes o lembrete dispara?',
-    type: 'number',
-    defaultValue: 3,
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'followups.appointment_reminder.enabled', equals: true },
-  },
-  {
-    id: 'followups.templates.reactivation_stage_1',
-    section: 'followups',
-    label: 'Template: reativação #1',
-    type: 'textarea',
-    defaultValue: 'Oi {nome}, passando pra saber se ainda tem interesse!',
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'followups.reactivation.enabled', equals: true },
-  },
-  {
-    id: 'followups.templates.reactivation_stage_2',
-    section: 'followups',
-    label: 'Template: reativação #2',
-    type: 'textarea',
-    defaultValue: 'Oi {nome}, consegui um horário especial pra você — quer aproveitar?',
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'followups.reactivation.enabled', equals: true },
-  },
-  {
-    id: 'followups.templates.reactivation_stage_3',
-    section: 'followups',
-    label: 'Template: reativação #3',
-    type: 'textarea',
-    defaultValue: 'Oi {nome}, última chance — posso segurar sua vaga?',
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'followups.reactivation.enabled', equals: true },
-  },
-  {
-    id: 'followups.templates.appointment_reminder',
-    section: 'followups',
-    label: 'Template: lembrete de agendamento',
-    type: 'textarea',
-    defaultValue: 'Lembrete: sua aula é hoje às {horario}. Te esperamos!',
-    targetPlans: PLENO_ONLY,
-    dependsOn: { questionId: 'followups.appointment_reminder.enabled', equals: true },
   },
 ];
 

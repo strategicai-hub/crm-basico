@@ -35,6 +35,7 @@ export interface Question {
   section: string;
   sectionTitle?: string;
   label: string;
+  labelByNiche?: Partial<Record<OnboardingNiche, string>>;
   help?: string;
   helpByNiche?: Partial<Record<OnboardingNiche, string>>;
   type: QuestionType;

@@ -163,6 +163,10 @@ export function OnboardingFormPage() {
 
   if (!ctx || !question) return null;
 
+  const effectiveQuestion: Question = {
+    ...question,
+    label: question.labelByNiche?.[ctx.niche] ?? question.label,
+  };
   const sectionTitle = getSectionTitleAt(ctx.questions, question, current === 0 ? null : visibleQuestions[current - 1]);
 
   return (
@@ -191,7 +195,7 @@ export function OnboardingFormPage() {
           )}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 md:p-8">
             <QuestionView
-              question={question}
+              question={effectiveQuestion}
               value={answers[question.id]}
               allAnswers={answers}
               uploads={uploads}
