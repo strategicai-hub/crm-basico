@@ -1,4 +1,3 @@
-import fs from 'fs';
 import { Readable } from 'stream';
 import { google, drive_v3 } from 'googleapis';
 
@@ -7,31 +6,36 @@ let driveClient: drive_v3.Drive | null = null;
 function getDrive(): drive_v3.Drive {
   if (driveClient) return driveClient;
 
-  const keyPath = process.env.GOOGLE_DRIVE_SA_JSON;
-  if (!keyPath) {
-    throw { status: 500, message: 'GOOGLE_DRIVE_SA_JSON não configurado' };
-  }
-  if (!fs.existsSync(keyPath)) {
-    throw { status: 500, message: `Arquivo da Service Account não encontrado em ${keyPath}` };
+  const credentialsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!credentialsJson) {
+    throw { status: 500, message: 'GOOGLE_SERVICE_ACCOUNT_JSON não configurado' };
   }
 
-  const credentials = JSON.parse(fs.readFileSync(keyPath, 'utf-8'));
-  const auth = new google.auth.GoogleAuth({
-    credentials,
+  let credentials: { client_email: string; private_key: string };
+  try {
+    credentials = JSON.parse(credentialsJson);
+  } catch (err) {
+    throw { status: 500, message: 'GOOGLE_SERVICE_ACCOUNT_JSON inválido (não é JSON)' };
+  }
+
+  const auth = new google.auth.JWT({
+    email: credentials.client_email,
+    key: credentials.private_key,
     scopes: ['https://www.googleapis.com/auth/drive'],
   });
+
   driveClient = google.drive({ version: 'v3', auth });
   return driveClient;
 }
 
 function getRootFolderId(): string {
-  const id = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
-  if (!id) throw { status: 500, message: 'GOOGLE_DRIVE_ROOT_FOLDER_ID não configurado' };
+  const id = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  if (!id) throw { status: 500, message: 'GOOGLE_DRIVE_FOLDER_ID não configurado' };
   return id;
 }
 
 export function isDriveConfigured() {
-  return Boolean(process.env.GOOGLE_DRIVE_SA_JSON && process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID);
+  return Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_JSON && process.env.GOOGLE_DRIVE_FOLDER_ID);
 }
 
 export async function createClientFolder(clientName: string, clientId: string) {

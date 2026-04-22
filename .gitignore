@@ -11,3 +11,7 @@ crm-drive-uploader.json
 *-service-account.json
 *-sa.json
 gdrive-sa.json
+gen-lang-client-*.json
+
+# Claude Code artifacts
+.claude/

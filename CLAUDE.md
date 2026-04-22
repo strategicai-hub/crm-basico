@@ -78,6 +78,15 @@ O workflow `.github/workflows/docker-publish.yml` roda a cada push na branch `ma
 - Portainer para gerenciamento da stack
 - Stack ID no Portainer: `58`
 
+## Google Drive (uploads do onboarding)
+
+Autenticação via `google.auth.JWT` (mesmo padrão do repo `strategicai-hub/help-sai`). Duas envs obrigatórias no stack (Portainer):
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON` — JSON completo da Service Account, em uma linha.
+- `GOOGLE_DRIVE_FOLDER_ID` — ID da pasta raiz do Drive compartilhada com o email da SA.
+
+Código: [backend/src/services/google-drive.service.ts](backend/src/services/google-drive.service.ts). Quando um formulário de onboarding é aberto ou recebe upload, o backend cria automaticamente a subpasta do cliente se `driveFolderId` estiver vazio (via `ensureDriveFolder` em `onboarding-forms.service.ts`).
+
 ## Banco de dados
 
 Modelos principais: `User`, `Client`, `Deal`, `Stage`, `Task`, `Activity`, `RefreshToken`
