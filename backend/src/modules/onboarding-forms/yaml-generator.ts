@@ -52,6 +52,7 @@ export function generateYaml(input: GenerateInput): string {
   if (niche === 'ACADEMIA' || niche === 'ESCOLA_CURSOS') {
     const audience = pickObject(answers, {
       min_age: 'audience.min_age',
+      min_age_conditions: 'audience.min_age_conditions',
       max_age_note: 'audience.max_age_note',
       levels: 'audience.levels',
       modalities: 'audience.modalities',
@@ -59,6 +60,7 @@ export function generateYaml(input: GenerateInput): string {
     if (Object.keys(audience).length) out.audience = audience;
 
     const schedule = pickObject(answers, {
+      business_hours: 'schedule.business_hours',
       class_duration: 'schedule.class_duration',
       class_note: 'schedule.class_note',
     });
@@ -66,18 +68,27 @@ export function generateYaml(input: GenerateInput): string {
 
     const teachers = answers['teachers'];
     if (isNonEmptyArray(teachers)) out.teachers = teachers;
+
+    const plans = pickObject(answers, {
+      description: 'plans.description',
+    });
+    if (Object.keys(plans).length) out.plans = plans;
   }
 
   if (niche === 'ACADEMIA') {
     const trial = pickObject(answers, {
       free: 'trial_class.free',
-      dress_code: 'trial_class.dress_code',
-      equipment_note: 'trial_class.equipment_note',
+      schedule: 'trial_class.schedule',
+      required_info: 'trial_class.required_info',
     });
     if (Object.keys(trial).length) out.trial_class = trial;
 
-    const benefits = answers['benefit_platforms'];
-    if (isNonEmptyArray(benefits)) out.benefit_platforms = benefits;
+    if (answers['benefit_platforms.accepts'] === true) {
+      const benefits = answers['benefit_platforms'];
+      if (isNonEmptyArray(benefits)) out.benefit_platforms = benefits;
+    } else if (answers['benefit_platforms.accepts'] === false) {
+      out.benefit_platforms = [];
+    }
   }
 
   if (niche === 'CONSORCIO') {
@@ -98,7 +109,9 @@ export function generateYaml(input: GenerateInput): string {
   const payment = pickObject(answers, {
     methods: 'payment.methods',
     enrollment_fee: 'payment.enrollment_fee',
+    enrollment_fee_value: 'payment.enrollment_fee_value',
     cancellation_fee: 'payment.cancellation_fee',
+    cancellation_fee_details: 'payment.cancellation_fee_details',
     makeup_policy: 'payment.makeup_policy',
   });
   if (Object.keys(payment).length) out.payment = payment;

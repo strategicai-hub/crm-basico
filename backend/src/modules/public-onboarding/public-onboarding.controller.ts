@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { submitOnboardingSchema } from '../onboarding-forms/onboarding-forms.schema';
 import * as service from '../onboarding-forms/onboarding-forms.service';
-import { uploadFileToFolder } from '../../services/google-drive.service';
+import { uploadFileToFolder, getRootFolderId } from '../../services/google-drive.service';
 
 export async function getByToken(req: Request, res: Response, next: NextFunction) {
   try {
@@ -15,18 +15,24 @@ export async function getByToken(req: Request, res: Response, next: NextFunction
 export async function upload(req: Request, res: Response, next: NextFunction) {
   try {
     const base = await service.getFormByToken(req.params.token);
-    const form = await service.ensureDriveFolder(base.id);
-    if (!form.driveFolderId) {
-      throw { status: 503, message: 'Upload indisponível: pasta do Drive não configurada' };
-    }
     const file = req.file;
     if (!file) throw { status: 400, message: 'Nenhum arquivo enviado' };
 
+    let folderId: string;
+    try {
+      const form = await service.ensureDriveFolder(base.id);
+      folderId = form.driveFolderId ?? getRootFolderId();
+    } catch (err) {
+      console.error('[onboarding] Falha ao garantir subpasta do Drive, usando pasta raiz:', err);
+      folderId = getRootFolderId();
+    }
+
     const questionId = (req.body?.questionId as string | undefined) ?? 'upload';
-    const filename = `${questionId}__${Date.now()}__${sanitize(file.originalname)}`;
+    const clientPrefix = sanitize(base.client.name).toLowerCase().slice(0, 32);
+    const filename = `${clientPrefix}__${questionId}__${Date.now()}__${sanitize(file.originalname)}`;
 
     const result = await uploadFileToFolder({
-      folderId: form.driveFolderId,
+      folderId,
       filename,
       mimeType: file.mimetype,
       buffer: file.buffer,

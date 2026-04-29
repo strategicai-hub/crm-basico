@@ -100,8 +100,6 @@ export const QUESTIONS: Question[] = [
     help: 'Nome que aparecerá nas mensagens.',
     type: 'text',
     required: true,
-    placeholder: 'Ex: Vic',
-    defaultValue: 'Vic',
   },
   {
     id: 'assistant.greeting',
@@ -109,7 +107,7 @@ export const QUESTIONS: Question[] = [
     label: 'Qual a saudação inicial dela?',
     type: 'textarea',
     required: true,
-    placeholder: 'Ex: Olá! Sou a Vic, tudo bem?',
+    placeholder: 'Ex: Olá! Tudo bem?',
   },
 
   // ---------- LOCATION ----------
@@ -137,16 +135,29 @@ export const QUESTIONS: Question[] = [
     uploadHint: 'Pode enviar uma ou mais imagens da estrutura.',
   },
 
-  // ---------- AUDIENCE (ESCOLA_CURSOS) ----------
+  // ---------- AUDIENCE ----------
   {
     id: 'audience.min_age',
     section: 'audience',
     sectionTitle: 'Público-alvo',
     label: 'Qual a idade mínima atendida?',
+    labelByNiche: {
+      ACADEMIA: 'A partir de qual idade aceita crianças/adolescentes?',
+      ESCOLA_CURSOS: 'Qual a idade mínima atendida?',
+    },
     type: 'number',
     min: 0,
     max: 120,
-    niches: ['ESCOLA_CURSOS'],
+    niches: ACADEMIA_AND_ESCOLA,
+    required: true,
+  },
+  {
+    id: 'audience.min_age_conditions',
+    section: 'audience',
+    label: 'Condições para crianças/adolescentes (opcional)',
+    help: 'Ex: necessita autorização dos pais, acompanhamento de responsável, modalidade restrita.',
+    type: 'textarea',
+    niches: ['ACADEMIA'],
   },
   {
     id: 'audience.max_age_note',
@@ -178,7 +189,17 @@ export const QUESTIONS: Question[] = [
     required: true,
   },
 
-  // ---------- SCHEDULE (ESCOLA_CURSOS only tem duração) ----------
+  // ---------- SCHEDULE ----------
+  {
+    id: 'schedule.business_hours',
+    section: 'schedule',
+    sectionTitle: 'Horários',
+    label: 'Qual o horário de funcionamento?',
+    help: 'Inclua dias da semana e horários (ex: seg–sex 6h–22h, sáb 8h–14h).',
+    type: 'textarea',
+    niches: ['ACADEMIA'],
+    required: true,
+  },
   {
     id: 'schedule.class_duration',
     section: 'schedule',
@@ -234,29 +255,33 @@ export const QUESTIONS: Question[] = [
     ],
   },
 
-  // ---------- TRIAL CLASS (ACADEMIA) ----------
+  // ---------- TRIAL CLASS / VISITA (ACADEMIA) ----------
   {
     id: 'trial_class.free',
     section: 'trial_class',
-    sectionTitle: 'Aula experimental',
+    sectionTitle: 'Aula experimental / visita',
     label: 'Oferece aula experimental gratuita?',
     type: 'boolean',
     niches: ['ACADEMIA'],
+    required: true,
   },
   {
-    id: 'trial_class.dress_code',
+    id: 'trial_class.schedule',
     section: 'trial_class',
-    label: 'Como o aluno deve ir vestido? (opcional)',
-    type: 'text',
-    placeholder: 'Ex: roupa de academia, descalço ou sapatilha',
-    niches: ['ACADEMIA'],
-  },
-  {
-    id: 'trial_class.equipment_note',
-    section: 'trial_class',
-    label: 'Precisa trazer algum material? (opcional)',
+    label: 'Horários disponíveis para agendamento de visita / aula experimental',
+    help: 'Inclua dias da semana e horários disponíveis. Mencione também regras (ex: somente com agendamento prévio, mediante apresentação de documento).',
     type: 'textarea',
     niches: ['ACADEMIA'],
+    required: true,
+  },
+  {
+    id: 'trial_class.required_info',
+    section: 'trial_class',
+    label: 'Informações necessárias para agendar a aula experimental',
+    help: 'Quais dados você precisa coletar do interessado? Um por linha (ex: nome, telefone, modalidade, dia, horário).',
+    type: 'list',
+    niches: ['ACADEMIA'],
+    required: true,
   },
 
   // ---------- CONSORCIO ----------
@@ -331,18 +356,25 @@ export const QUESTIONS: Question[] = [
     id: 'plans.image',
     section: 'plans',
     sectionTitle: 'Planos e preços',
-    label: 'Envie uma imagem com a tabela de planos',
-    labelByNiche: {
-      ACADEMIA: 'Envie uma imagem com a tabela de planos',
-      ESCOLA_CURSOS: 'Envie uma imagem da tabela de preços (opcional)',
-    },
+    label: 'Envie uma imagem com a tabela de planos (opcional)',
     helpByNiche: {
       ACADEMIA:
-        'Anexe uma foto ou PDF com nome, preço e descrição dos planos. Se enviar a imagem, não precisa preencher em texto.',
+        'Anexe uma foto ou PDF com nome, preço e descrição dos planos. Se já descrever os planos por escrito na próxima pergunta, este envio é opcional.',
+      ESCOLA_CURSOS:
+        'Anexe uma foto ou PDF com a tabela de preços. Opcional caso descreva por escrito.',
     },
     type: 'upload',
     accept: 'image/*,application/pdf',
     niches: ACADEMIA_AND_ESCOLA,
+  },
+  {
+    id: 'plans.description',
+    section: 'plans',
+    label: 'Descreva os planos disponíveis (nome, valores, fidelidade)',
+    help: 'Liste todos os planos: mensal, trimestral, semestral, anual, créditos, etc. Inclua valores, formas de pagamento e condições de fidelidade. Se já enviou a imagem da tabela acima, pode escrever apenas observações adicionais.',
+    type: 'textarea',
+    niches: ACADEMIA_AND_ESCOLA,
+    required: true,
   },
 
   // ---------- PAYMENT ----------
@@ -352,6 +384,7 @@ export const QUESTIONS: Question[] = [
     sectionTitle: 'Formas de pagamento',
     label: 'Quais formas de pagamento aceita?',
     type: 'multiselect',
+    required: true,
     options: [
       { value: 'PIX', label: 'PIX' },
       { value: 'debito', label: 'Cartão de débito' },
@@ -365,14 +398,36 @@ export const QUESTIONS: Question[] = [
     section: 'payment',
     label: 'Cobra taxa de matrícula/adesão?',
     type: 'boolean',
+    required: true,
     niches: ['ACADEMIA', 'ESCOLA_CURSOS', 'GENERICO'],
+  },
+  {
+    id: 'payment.enrollment_fee_value',
+    section: 'payment',
+    label: 'Qual o valor da taxa de matrícula/adesão?',
+    type: 'text',
+    placeholder: 'Ex: R$ 100,00',
+    dependsOn: { questionId: 'payment.enrollment_fee', equals: true },
+    niches: ['ACADEMIA', 'ESCOLA_CURSOS', 'GENERICO'],
+    required: true,
   },
   {
     id: 'payment.cancellation_fee',
     section: 'payment',
     label: 'Existe taxa de cancelamento/fidelidade?',
     type: 'boolean',
+    required: true,
     niches: ['ACADEMIA', 'ESCOLA_CURSOS', 'GENERICO'],
+  },
+  {
+    id: 'payment.cancellation_fee_details',
+    section: 'payment',
+    label: 'Detalhe a fidelidade / multa por cancelamento',
+    help: 'Ex: 12 meses de fidelidade, multa de 30% das mensalidades restantes.',
+    type: 'textarea',
+    dependsOn: { questionId: 'payment.cancellation_fee', equals: true },
+    niches: ['ACADEMIA', 'ESCOLA_CURSOS', 'GENERICO'],
+    required: true,
   },
   {
     id: 'payment.makeup_policy',
@@ -384,16 +439,46 @@ export const QUESTIONS: Question[] = [
 
   // ---------- BENEFIT PLATFORMS (ACADEMIA) ----------
   {
-    id: 'benefit_platforms',
+    id: 'benefit_platforms.accepts',
     section: 'benefit_platforms',
     sectionTitle: 'Plataformas de benefícios',
-    label: 'Aceita plataformas de benefícios (Gympass, Wellhub, ...)? (opcional)',
-    help: 'Adicione cada plataforma aceita.',
+    label: 'Aceita plataformas de benefícios (Gympass, Wellhub, TotalPass, etc.)?',
+    type: 'boolean',
+    niches: ['ACADEMIA'],
+    required: true,
+  },
+  {
+    id: 'benefit_platforms',
+    section: 'benefit_platforms',
+    label: 'Cadastre as plataformas aceitas',
+    help: 'Para cada plataforma informe a partir de qual plano ela libera, quantos check-ins mensais e quaisquer exigências.',
     type: 'repeater',
     niches: ['ACADEMIA'],
+    dependsOn: { questionId: 'benefit_platforms.accepts', equals: true },
+    required: true,
     fields: [
-      { id: 'name', section: 'benefit_platforms', label: 'Nome', type: 'text', required: true },
-      { id: 'note', section: 'benefit_platforms', label: 'Observação (opcional)', type: 'text' },
+      { id: 'name', section: 'benefit_platforms', label: 'Nome da plataforma', type: 'text', required: true, placeholder: 'Ex: Gympass' },
+      {
+        id: 'from_plan',
+        section: 'benefit_platforms',
+        label: 'A partir de qual plano libera?',
+        type: 'text',
+        required: true,
+        placeholder: 'Ex: Silver, Gold...',
+      },
+      {
+        id: 'monthly_checkins',
+        section: 'benefit_platforms',
+        label: 'Check-ins mensais permitidos',
+        type: 'text',
+        placeholder: 'Ex: 8 por mês',
+      },
+      {
+        id: 'requirements',
+        section: 'benefit_platforms',
+        label: 'Exigências específicas (opcional)',
+        type: 'textarea',
+      },
     ],
   },
 

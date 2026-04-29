@@ -28,7 +28,7 @@ function getDrive(): drive_v3.Drive {
   return driveClient;
 }
 
-function getRootFolderId(): string {
+export function getRootFolderId(): string {
   const id = process.env.GOOGLE_DRIVE_FOLDER_ID;
   if (!id) throw { status: 500, message: 'GOOGLE_DRIVE_FOLDER_ID não configurado' };
   return id;
