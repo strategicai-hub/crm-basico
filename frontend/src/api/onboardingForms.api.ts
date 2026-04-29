@@ -108,6 +108,8 @@ export const onboardingFormsApi = {
   createOrUpdate: (clientId: string, body: { niche?: OnboardingNiche; targetPlan?: OnboardingTargetPlan }) =>
     api.post<OnboardingFormSummary>(`/clients/${clientId}/onboarding-form`, body),
   revoke: (clientId: string) => api.delete(`/clients/${clientId}/onboarding-form/token`),
+  getQuestions: (clientId: string) =>
+    api.get<Question[]>(`/clients/${clientId}/onboarding-form/questions`),
   listSubmissions: (clientId: string) =>
     api.get<OnboardingSubmissionRecord[]>(`/clients/${clientId}/onboarding-form/submissions`),
   deleteSubmission: (clientId: string, submissionId: string) =>

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { createOnboardingFormSchema } from './onboarding-forms.schema';
 import * as service from './onboarding-forms.service';
+import { QUESTIONS } from './questions';
 
 export async function get(req: Request, res: Response, next: NextFunction) {
   try {
@@ -43,6 +44,14 @@ export async function deleteSubmission(req: Request, res: Response, next: NextFu
   try {
     await service.deleteSubmission(req.params.id, req.params.submissionId);
     res.json({ message: 'Resposta removida' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getQuestions(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json(QUESTIONS);
   } catch (err) {
     next(err);
   }

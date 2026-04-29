@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { clientsApi } from '../api/clients.api';
 import { contractFormsApi, ContractSubmission } from '../api/contractForms.api';
 import {
   onboardingFormsApi,
   OnboardingFormSummary,
+  OnboardingNiche,
+  OnboardingSubmissionRecord,
+  Question,
+  UploadEntry,
 } from '../api/onboardingForms.api';
 import { useAuthStore } from '../store/authStore';
 
@@ -48,6 +52,117 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
+function formatAnswerValue(value: unknown, question: Question): ReactNode {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '—';
+    if (typeof value[0] === 'string' || typeof value[0] === 'number') {
+      return (
+        <ul className="list-disc list-inside space-y-0.5">
+          {(value as Array<string | number>).map((v, i) => (
+            <li key={i}>{String(v)}</li>
+          ))}
+        </ul>
+      );
+    }
+    if (question.type === 'repeater' && question.fields) {
+      return (
+        <div className="space-y-2">
+          {(value as Array<Record<string, unknown>>).map((item, i) => (
+            <div key={i} className="rounded border border-gray-200 bg-gray-50 p-2 space-y-1">
+              <p className="text-[11px] uppercase tracking-wide text-gray-400">Item {i + 1}</p>
+              {question.fields!.map((field) => {
+                const fv = item[field.id];
+                if (fv === null || fv === undefined || fv === '') return null;
+                return (
+                  <div key={field.id}>
+                    <p className="text-xs text-gray-500">{field.label}</p>
+                    <p className="text-sm text-gray-800 break-words">
+                      {Array.isArray(fv) ? (fv as unknown[]).map(String).join(', ') : String(fv)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return JSON.stringify(value);
+  }
+  return JSON.stringify(value);
+}
+
+function OnboardingAnswers({
+  questions,
+  answers,
+  uploads,
+}: {
+  questions: Question[];
+  answers: Record<string, unknown>;
+  uploads: UploadEntry[];
+}) {
+  const niche =
+    (answers['business.niche'] as OnboardingNiche | undefined) ?? undefined;
+
+  const visible = questions.filter((q) => {
+    if (q.niches && q.niches.length > 0 && niche && !q.niches.includes(niche)) return false;
+    return true;
+  });
+
+  return (
+    <div className="space-y-4">
+      {visible.map((q) => {
+        const label = (niche && q.labelByNiche?.[niche]) ?? q.label;
+        if (q.type === 'upload') {
+          const files = uploads.filter((u) => u.questionId === q.id);
+          return (
+            <div key={q.id}>
+              <p className="text-xs text-gray-500">{label}</p>
+              {files.length === 0 ? (
+                <p className="text-sm text-gray-400">—</p>
+              ) : (
+                <ul className="space-y-1 mt-1">
+                  {files.map((u) => (
+                    <li key={u.driveFileId}>
+                      <a
+                        href={u.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-[#0f4c4c] underline break-words"
+                      >
+                        {u.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        }
+        const value = answers[q.id];
+        const isEmpty =
+          value === null ||
+          value === undefined ||
+          value === '' ||
+          (Array.isArray(value) && value.length === 0);
+        if (isEmpty && !q.required) return null;
+        return (
+          <div key={q.id}>
+            <p className="text-xs text-gray-500">{label}</p>
+            <div className="text-sm text-gray-800 break-words">
+              {formatAnswerValue(value, q)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -65,6 +180,9 @@ export function ClientDetailPage() {
   const [onboardingForm, setOnboardingForm] = useState<OnboardingFormSummary | null>(null);
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [onboardingCopied, setOnboardingCopied] = useState(false);
+  const [onboardingSubmissions, setOnboardingSubmissions] = useState<OnboardingSubmissionRecord[]>([]);
+  const [onboardingQuestions, setOnboardingQuestions] = useState<Question[]>([]);
+  const [expandedOnboarding, setExpandedOnboarding] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -82,6 +200,12 @@ export function ClientDetailPage() {
     onboardingFormsApi.get(id).then(({ data }) => {
       setOnboardingForm(data);
     });
+    onboardingFormsApi.listSubmissions(id).then(({ data }) => {
+      setOnboardingSubmissions(data);
+    }).catch(() => setOnboardingSubmissions([]));
+    onboardingFormsApi.getQuestions(id).then(({ data }) => {
+      setOnboardingQuestions(data);
+    }).catch(() => setOnboardingQuestions([]));
   }, [id]);
 
   const formUrl = client?.formToken
@@ -173,6 +297,7 @@ export function ClientDetailPage() {
       setOnboardingForm((prev) =>
         prev ? { ...prev, submissions: prev.submissions.filter((s) => s.id !== submissionId) } : prev
       );
+      setOnboardingSubmissions((prev) => prev.filter((s) => s.id !== submissionId));
     } catch (err: any) {
       alert(err.response?.data?.error || 'Falha ao excluir resposta.');
     }
@@ -394,26 +519,45 @@ export function ClientDetailPage() {
           </div>
         )}
 
-        {onboardingForm && onboardingForm.submissions.length > 0 && (
+        {onboardingSubmissions.length > 0 && (
           <div className="mt-6 border-t border-gray-100 pt-4">
             <p className="text-xs font-medium text-gray-500 mb-2">Respostas recebidas</p>
             <div className="space-y-2">
-              {onboardingForm.submissions.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2"
-                >
-                  <span className="text-sm text-gray-700">
-                    Enviado em {new Date(s.submittedAt).toLocaleString('pt-BR')}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteSubmission(s.id)}
-                    className="text-xs text-red-600 hover:underline self-start sm:self-auto"
-                  >
-                    Excluir
-                  </button>
-                </div>
-              ))}
+              {onboardingSubmissions.map((s) => {
+                const isOpen = expandedOnboarding === s.id;
+                return (
+                  <div key={s.id} className="border border-gray-200 rounded-lg">
+                    <button
+                      onClick={() => setExpandedOnboarding(isOpen ? null : s.id)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
+                    >
+                      <p className="text-sm text-gray-700">
+                        Enviado em {new Date(s.submittedAt).toLocaleString('pt-BR')}
+                      </p>
+                      <span className="text-gray-400 text-sm">{isOpen ? '−' : '+'}</span>
+                    </button>
+                    {isOpen && (
+                      <>
+                        <div className="px-4 pb-4 border-t border-gray-100 pt-3">
+                          <OnboardingAnswers
+                            questions={onboardingQuestions}
+                            answers={s.answers}
+                            uploads={s.uploads}
+                          />
+                        </div>
+                        <div className="px-4 pb-3 flex justify-end">
+                          <button
+                            onClick={() => handleDeleteSubmission(s.id)}
+                            className="text-xs text-red-600 hover:underline"
+                          >
+                            Excluir resposta
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <button
               onClick={handleDownloadYaml}
