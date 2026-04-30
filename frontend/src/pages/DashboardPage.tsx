@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { dashboardApi } from '../api/dashboard.api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -61,6 +61,63 @@ export function DashboardPage() {
   const [startDate, setStartDate] = useState(toIsoDate(firstDayOfMonth));
   const [endDate, setEndDate] = useState(toIsoDate(lastDayOfMonth));
   const [leads, setLeads] = useState<LeadsBySource | null>(null);
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pendingStart, setPendingStart] = useState(startDate);
+  const [pendingEnd, setPendingEnd] = useState(endDate);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [pickerOpen]);
+
+  const formatRangeLabel = (s: string, e: string) => {
+    const fmt = (iso: string) => {
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    };
+    return `${fmt(s)} — ${fmt(e)}`;
+  };
+
+  const applyPreset = (preset: 'this-month' | 'last-month' | 'last-7' | 'last-30') => {
+    const t = new Date();
+    let s: Date, e: Date;
+    if (preset === 'this-month') {
+      s = new Date(t.getFullYear(), t.getMonth(), 1);
+      e = new Date(t.getFullYear(), t.getMonth() + 1, 0);
+    } else if (preset === 'last-month') {
+      s = new Date(t.getFullYear(), t.getMonth() - 1, 1);
+      e = new Date(t.getFullYear(), t.getMonth(), 0);
+    } else if (preset === 'last-7') {
+      e = t;
+      s = new Date(t.getFullYear(), t.getMonth(), t.getDate() - 6);
+    } else {
+      e = t;
+      s = new Date(t.getFullYear(), t.getMonth(), t.getDate() - 29);
+    }
+    setPendingStart(toIsoDate(s));
+    setPendingEnd(toIsoDate(e));
+  };
+
+  const applyRange = () => {
+    if (!pendingStart || !pendingEnd) return;
+    const s = pendingStart <= pendingEnd ? pendingStart : pendingEnd;
+    const e = pendingStart <= pendingEnd ? pendingEnd : pendingStart;
+    setStartDate(s);
+    setEndDate(e);
+    setPickerOpen(false);
+  };
+
+  const openPicker = () => {
+    setPendingStart(startDate);
+    setPendingEnd(endDate);
+    setPickerOpen(true);
+  };
 
   useEffect(() => {
     dashboardApi.summary().then(({ data }) => setSummary(data));
@@ -149,26 +206,77 @@ export function DashboardPage() {
       </div>
 
       {/* Leads por Fonte */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <h2 className="text-base sm:text-lg font-semibold">Leads por Fonte</h2>
-          <div className="flex items-center gap-2 text-sm">
-            <label className="text-gray-600">De</label>
-            <input
-              type="date"
-              value={startDate}
-              max={endDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-            />
-            <label className="text-gray-600">até</label>
-            <input
-              type="date"
-              value={endDate}
-              min={startDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-            />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 inline-block max-w-full align-top">
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-base sm:text-lg font-semibold whitespace-nowrap">Leads por Fonte</h2>
+          <div className="relative" ref={pickerRef}>
+            <button
+              type="button"
+              onClick={() => (pickerOpen ? setPickerOpen(false) : openPicker())}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 flex items-center gap-2"
+            >
+              <span>{formatRangeLabel(startDate, endDate)}</span>
+              <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {pickerOpen && (
+              <div className="absolute z-10 mt-2 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-72">
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {[
+                    { k: 'this-month', label: 'Este mês' },
+                    { k: 'last-month', label: 'Mês passado' },
+                    { k: 'last-7', label: 'Últimos 7 dias' },
+                    { k: 'last-30', label: 'Últimos 30 dias' },
+                  ].map((p) => (
+                    <button
+                      key={p.k}
+                      type="button"
+                      onClick={() => applyPreset(p.k as 'this-month' | 'last-month' | 'last-7' | 'last-30')}
+                      className="px-2 py-1 text-xs rounded border border-gray-200 hover:bg-gray-100 text-gray-700"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Início</label>
+                    <input
+                      type="date"
+                      value={pendingStart}
+                      onChange={(e) => setPendingStart(e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Fim</label>
+                    <input
+                      type="date"
+                      value={pendingEnd}
+                      onChange={(e) => setPendingEnd(e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setPickerOpen(false)}
+                    className="px-3 py-1.5 text-sm rounded border border-gray-200 text-gray-600 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyRange}
+                    className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
