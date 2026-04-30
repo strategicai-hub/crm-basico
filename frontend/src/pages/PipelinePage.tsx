@@ -183,8 +183,15 @@ export function PipelinePage() {
     setStages(data);
   };
 
+  const fetchSeq = useRef(0);
   const fetchDeals = async () => {
+    const seq = ++fetchSeq.current;
     const { data } = await dealsApi.list();
+    if (seq !== fetchSeq.current) return;
+    if (pendingMoves.current > 0) {
+      refetchPending.current = true;
+      return;
+    }
     setColumns(data);
   };
 
@@ -257,30 +264,34 @@ export function PipelinePage() {
     let isDown = false;
     let startX = 0;
     let startScroll = 0;
-    let moved = false;
+
+    const isInteractive = (target: EventTarget | null) => {
+      const node = target as HTMLElement | null;
+      if (!node) return false;
+      return !!node.closest(
+        '[data-rfd-drag-handle-draggable-id], [data-rbd-drag-handle-draggable-id], button, a, input, textarea, select, label, [role="button"]',
+      );
+    };
 
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return;
-      if (e.target !== el) return;
+      if (isInteractive(e.target)) return;
       isDown = true;
-      moved = false;
       startX = e.clientX;
       startScroll = el.scrollLeft;
       el.style.cursor = 'grabbing';
-      el.style.userSelect = 'none';
     };
     const onMouseMove = (e: MouseEvent) => {
       if (!isDown) return;
-      e.preventDefault();
       const dx = e.clientX - startX;
-      if (Math.abs(dx) > 3) moved = true;
+      if (Math.abs(dx) < 3) return;
+      e.preventDefault();
       el.scrollLeft = startScroll - dx;
     };
     const endDrag = () => {
       if (!isDown) return;
       isDown = false;
       el.style.cursor = '';
-      el.style.userSelect = '';
     };
 
     el.addEventListener('mousedown', onMouseDown);
