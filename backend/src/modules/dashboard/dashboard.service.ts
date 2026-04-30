@@ -138,6 +138,14 @@ export async function getLeadsBySource(ownerFilter: any, startDate: Date, endDat
     }
   }
 
+  const newClients: Record<string, number | null> = contractStage
+    ? { ...passedContract }
+    : (() => {
+        const o: Record<string, number | null> = { __total: null };
+        for (const origin of origins) o[origin.id] = null;
+        return o;
+      })();
+
   return {
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
@@ -145,6 +153,7 @@ export async function getLeadsBySource(ownerFilter: any, startDate: Date, endDat
     stages: stages.map((s) => ({ id: s.id, label: s.label, type: s.type })),
     matrix,
     totals,
+    newClients,
     conversion,
     contractStageId: contractStage?.id ?? null,
   };

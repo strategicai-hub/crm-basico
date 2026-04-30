@@ -38,6 +38,7 @@ interface LeadsBySource {
   stages: { id: string; label: string; type: 'OPEN' | 'WON' | 'LOST' }[];
   matrix: Record<string, Record<string, number>>;
   totals: Record<string, number>;
+  newClients: Record<string, number | null>;
   conversion: Record<string, number> | null;
   contractStageId: string | null;
 }
@@ -206,14 +207,14 @@ export function DashboardPage() {
       </div>
 
       {/* Leads por Fonte */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 inline-block max-w-full align-top">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 inline-block max-w-full align-top w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
           <h2 className="text-base sm:text-lg font-semibold whitespace-nowrap">Leads por Fonte</h2>
-          <div className="relative" ref={pickerRef}>
+          <div className="relative w-full sm:w-auto" ref={pickerRef}>
             <button
               type="button"
               onClick={() => (pickerOpen ? setPickerOpen(false) : openPicker())}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 flex items-center gap-2"
+              className="w-full sm:w-auto px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 flex items-center justify-between sm:justify-start gap-2"
             >
               <span>{formatRangeLabel(startDate, endDate)}</span>
               <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,50 +286,80 @@ export function DashboardPage() {
         ) : leads.origins.length === 0 ? (
           <p className="text-gray-500 text-sm">Nenhuma origem cadastrada. Cadastre origens em /origens.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="text-sm w-auto max-w-full border border-gray-200 rounded-lg overflow-hidden">
-              <thead>
-                <tr className="bg-gray-200 border-b border-gray-300">
-                  <th className="text-left py-2 px-3 font-semibold text-gray-700">Etapa / Métrica</th>
-                  {leads.origins.map((o) => (
-                    <th key={o.id} className="text-center py-2 px-3 font-semibold text-gray-700 whitespace-nowrap">{o.name}</th>
-                  ))}
-                  <th className="text-center py-2 px-3 font-semibold text-gray-700">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="bg-gray-200 border-b border-gray-300">
-                  <td className="py-1.5 px-3 font-semibold text-gray-800">Total de Leads</td>
-                  {leads.origins.map((o) => (
-                    <td key={o.id} className="py-1.5 px-3 text-center font-semibold text-gray-800">{leads.totals[o.id] ?? 0}</td>
-                  ))}
-                  <td className="py-1.5 px-3 text-center font-semibold text-gray-800">{leads.totals.__total ?? 0}</td>
-                </tr>
-                {leads.stages.map((stage, idx) => (
-                  <tr key={stage.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="py-1.5 px-3 text-gray-700">{stage.label}</td>
+          <div className="space-y-3">
+            <div className="overflow-x-auto -mx-1 px-1">
+              <table className="text-xs sm:text-sm w-auto max-w-full border border-gray-200 rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-gray-200 border-b border-gray-300">
+                    <th className="text-left py-2 px-2 sm:px-3 font-semibold text-gray-700 whitespace-nowrap">Etapa / Métrica</th>
                     {leads.origins.map((o) => (
-                      <td key={o.id} className="py-1.5 px-3 text-center text-gray-700">{leads.matrix[stage.id]?.[o.id] ?? 0}</td>
+                      <th key={o.id} className="text-center py-2 px-2 sm:px-3 font-semibold text-gray-700 whitespace-nowrap">{o.name}</th>
                     ))}
-                    <td className="py-1.5 px-3 text-center font-semibold text-gray-800">{leads.matrix[stage.id]?.__total ?? 0}</td>
+                    <th className="text-center py-2 px-2 sm:px-3 font-semibold text-gray-700">Total</th>
                   </tr>
-                ))}
-                <tr className="bg-gray-200 border-t border-gray-300">
-                  <td className="py-1.5 px-3 font-semibold text-gray-800">Taxa de Conversão</td>
-                  {leads.origins.map((o) => (
-                    <td key={o.id} className="py-1.5 px-3 text-center font-semibold text-gray-800">
-                      {formatPercent(leads.conversion ? leads.conversion[o.id] : null)}
-                    </td>
+                </thead>
+                <tbody>
+                  {leads.stages.map((stage, idx) => (
+                    <tr key={stage.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                      <td className="py-1.5 px-2 sm:px-3 text-gray-700 whitespace-nowrap">{stage.label}</td>
+                      {leads.origins.map((o) => (
+                        <td key={o.id} className="py-1.5 px-2 sm:px-3 text-center text-gray-700">{leads.matrix[stage.id]?.[o.id] ?? 0}</td>
+                      ))}
+                      <td className="py-1.5 px-2 sm:px-3 text-center font-semibold text-gray-800">{leads.matrix[stage.id]?.__total ?? 0}</td>
+                    </tr>
                   ))}
-                  <td className="py-1.5 px-3 text-center font-semibold text-gray-800">
-                    {formatPercent(leads.conversion ? leads.conversion.__total : null)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-x-auto -mx-1 px-1">
+              <table className="text-xs sm:text-sm w-auto max-w-full border border-gray-200 rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-gray-200 border-b border-gray-300">
+                    <th className="text-left py-2 px-2 sm:px-3 font-semibold text-gray-700 whitespace-nowrap">Métrica</th>
+                    {leads.origins.map((o) => (
+                      <th key={o.id} className="text-center py-2 px-2 sm:px-3 font-semibold text-gray-700 whitespace-nowrap">{o.name}</th>
+                    ))}
+                    <th className="text-center py-2 px-2 sm:px-3 font-semibold text-gray-700">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-white">
+                    <td className="py-1.5 px-2 sm:px-3 font-semibold text-gray-800 whitespace-nowrap">Total de Leads</td>
+                    {leads.origins.map((o) => (
+                      <td key={o.id} className="py-1.5 px-2 sm:px-3 text-center font-semibold text-gray-800">{leads.totals[o.id] ?? 0}</td>
+                    ))}
+                    <td className="py-1.5 px-2 sm:px-3 text-center font-semibold text-gray-800">{leads.totals.__total ?? 0}</td>
+                  </tr>
+                  <tr className="bg-gray-100">
+                    <td className="py-1.5 px-2 sm:px-3 font-semibold text-gray-800 whitespace-nowrap">Novos Clientes</td>
+                    {leads.origins.map((o) => (
+                      <td key={o.id} className="py-1.5 px-2 sm:px-3 text-center font-semibold text-gray-800">
+                        {leads.newClients[o.id] ?? '—'}
+                      </td>
+                    ))}
+                    <td className="py-1.5 px-2 sm:px-3 text-center font-semibold text-gray-800">
+                      {leads.newClients.__total ?? '—'}
+                    </td>
+                  </tr>
+                  <tr className="bg-white">
+                    <td className="py-1.5 px-2 sm:px-3 font-semibold text-gray-800 whitespace-nowrap">Taxa de Conversão</td>
+                    {leads.origins.map((o) => (
+                      <td key={o.id} className="py-1.5 px-2 sm:px-3 text-center font-semibold text-gray-800">
+                        {formatPercent(leads.conversion ? leads.conversion[o.id] : null)}
+                      </td>
+                    ))}
+                    <td className="py-1.5 px-2 sm:px-3 text-center font-semibold text-gray-800">
+                      {formatPercent(leads.conversion ? leads.conversion.__total : null)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
             {!leads.contractStageId && (
-              <p className="text-xs text-gray-400 mt-2">
-                Cadastre uma etapa com "Contrato" no nome para calcular a taxa de conversão.
+              <p className="text-xs text-gray-400">
+                Cadastre uma etapa com "Contrato" no nome para calcular Novos Clientes e Taxa de Conversão.
               </p>
             )}
           </div>
